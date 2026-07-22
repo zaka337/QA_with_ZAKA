@@ -3,27 +3,25 @@ import gsap from 'gsap';
 import { researchConfig } from '../config';
 
 export default function AlumniArchives() {
-  const gridRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const sectionRef = useRef<HTMLElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const items = itemRefs.current.filter(Boolean) as HTMLDivElement[];
+    const section = sectionRef.current;
+    const text = textRef.current;
+    if (!section || !text) return;
 
-    items.forEach((item) => {
-      gsap.set(item, { opacity: 0, y: 30 });
-    });
+    gsap.set(text, { opacity: 0, y: 30 });
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const idx = items.indexOf(entry.target as HTMLDivElement);
-            gsap.to(entry.target, {
+            gsap.to(text, {
               opacity: 1,
               y: 0,
-              duration: 0.8,
-              delay: (idx % 4) * 0.1,
-              ease: 'power2.out',
+              duration: 1,
+              ease: 'power3.out',
             });
             observer.unobserve(entry.target);
           }
@@ -32,7 +30,7 @@ export default function AlumniArchives() {
       { threshold: 0.1 }
     );
 
-    items.forEach((item) => observer.observe(item));
+    observer.observe(section);
 
     return () => observer.disconnect();
   }, []);
@@ -41,17 +39,22 @@ export default function AlumniArchives() {
     return null;
   }
 
+  // Duplicate items to create a seamless infinite loop
+  const duplicatedProjects = [...researchConfig.projects, ...researchConfig.projects];
+
   return (
     <section
       id="alumni"
+      ref={sectionRef}
       style={{
-        padding: '150px 5vw',
+        padding: '120px 0 80px',
         background: '#0a0a0a',
         position: 'relative',
         zIndex: 2,
+        overflow: 'hidden',
       }}
     >
-      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 5vw' }} ref={textRef}>
         {researchConfig.sectionLabel && (
           <div
             className="mb-6"
@@ -76,86 +79,72 @@ export default function AlumniArchives() {
             background: 'rgba(255, 255, 255, 0.1)',
           }}
         />
+      </div>
 
-        <div
-          ref={gridRef}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
-          style={{ gap: 0 }}
-        >
-          {researchConfig.projects.map((project, i) => (
+      {/* Marquee Container */}
+      <div className="relative w-full overflow-hidden flex items-center group">
+        {/* Left Fade */}
+        <div className="absolute top-0 left-0 w-24 md:w-64 h-full bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
+        
+        {/* Right Fade */}
+        <div className="absolute top-0 right-0 w-24 md:w-64 h-full bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
+        
+        {/* Animated Track */}
+        <div className="flex animate-marquee group-hover:[animation-play-state:paused] w-max">
+          {duplicatedProjects.map((project, i) => (
             <div
               key={`${project.title}-${i}`}
-              ref={(el) => { itemRefs.current[i] = el; }}
-              className="group cursor-pointer"
+              className="flex items-center space-x-4 mx-4 md:mx-8 px-6 py-4 rounded-xl cursor-pointer transition-colors duration-300 hover:bg-white/5"
               style={{
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRight: (i + 1) % 4 !== 0 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                padding: '24px 20px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                minWidth: '280px',
               }}
             >
-              <div
-                className="relative overflow-hidden mb-4"
-                style={{ aspectRatio: '1/1' }}
-              >
-                {project.image && (
+              {project.image && (
+                <div className="w-12 h-12 flex-shrink-0 rounded-md overflow-hidden bg-white/5">
                   <img
                     src={project.image}
                     alt={project.title}
-                    className="w-full h-full object-cover transition-all duration-700"
+                    className="w-full h-full object-cover transition-all duration-300"
                     style={{
-                      opacity: 0.5,
+                      opacity: 0.8,
                       filter: 'grayscale(100%)',
                     }}
                     onMouseEnter={(e) => {
                       (e.target as HTMLImageElement).style.opacity = '1';
                       (e.target as HTMLImageElement).style.filter = 'grayscale(0%)';
-                      (e.target as HTMLImageElement).style.transform = 'scale(1.04)';
                     }}
                     onMouseLeave={(e) => {
-                      (e.target as HTMLImageElement).style.opacity = '0.5';
+                      (e.target as HTMLImageElement).style.opacity = '0.8';
                       (e.target as HTMLImageElement).style.filter = 'grayscale(100%)';
-                      (e.target as HTMLImageElement).style.transform = 'scale(1)';
                     }}
                     loading="lazy"
                   />
-                )}
-              </div>
-              <h4
-                style={{
-                  fontFamily: "'EB Garamond', serif",
-                  fontWeight: 400,
-                  fontSize: 18,
-                  color: '#ffffff',
-                  margin: '0 0 6px 0',
-                  lineHeight: 1.3,
-                }}
-              >
-                {project.title}
-              </h4>
-              <div
-                className="flex items-center justify-between"
-              >
+                </div>
+              )}
+              <div className="flex flex-col">
+                <h4
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 500,
+                    fontSize: 15,
+                    color: '#ffffff',
+                    margin: '0 0 2px 0',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {project.title}
+                </h4>
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
-                    fontWeight: 200,
-                    fontSize: 12,
+                    fontWeight: 300,
+                    fontSize: 13,
                     color: '#dadada',
-                    opacity: 0.6,
+                    opacity: 0.5,
                   }}
                 >
                   {project.discipline}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'Fira Code', monospace",
-                    fontWeight: 400,
-                    fontSize: 11,
-                    color: '#dadada',
-                    opacity: 0.4,
-                  }}
-                >
-                  {project.year}
                 </span>
               </div>
             </div>
