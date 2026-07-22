@@ -105,6 +105,29 @@ export async function uploadAvatar(userId: string, file: File): Promise<string |
 
 /** Fetch all courses the user is enrolled in */
 export async function getEnrollments(userId: string) {
+  // First check if the user is a paid member
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', userId)
+    .single();
+
+  if (profile?.plan === 'lifetime' || profile?.plan === 'monthly') {
+    // Paid members get access to ALL courses automatically
+    const { data: courses } = await supabase.from('courses').select('*');
+    if (!courses) return [];
+    
+    return courses.map(course => ({
+      id: `auto-${course.id}`,
+      user_id: userId,
+      course_id: course.id,
+      plan: profile.plan,
+      enrolled_at: profile.plan === 'lifetime' ? '2020-01-01T00:00:00.000Z' : new Date().toISOString(),
+      courses: course
+    }));
+  }
+
+  // Free members rely on actual enrollment records
   const { data } = await supabase
     .from('enrollments')
     .select('*, courses(*)')
