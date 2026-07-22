@@ -25,7 +25,7 @@ type EnrolledCourseData = {
 export default function Dashboard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourseData[]>([]);
   const [globalResources, setGlobalResources] = useState<any>(null);
@@ -34,6 +34,7 @@ export default function Dashboard() {
   const certRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const displayName =
+    profile?.display_name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email?.split('@')[0] ||

@@ -11,7 +11,7 @@ export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { user, role, signOut } = useAuth();
+  const { user, profile, role, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,22 +68,15 @@ export default function Navigation() {
     navigate('/login');
   };
 
-  const lastProvider = localStorage.getItem('auth_provider') || user?.app_metadata?.provider;
-  const currentIdentity = user?.identities?.find(
-    (id: { provider: string }) => id.provider === lastProvider
-  );
-
   const avatarUrl =
+    profile?.avatar_url ||
     user?.user_metadata?.avatar_url ||
-    user?.user_metadata?.picture ||
-    currentIdentity?.identity_data?.avatar_url ||
-    currentIdentity?.identity_data?.picture;
+    user?.user_metadata?.picture;
 
   const displayName =
+    profile?.display_name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
-    currentIdentity?.identity_data?.full_name ||
-    currentIdentity?.identity_data?.name ||
     user?.email?.split('@')[0] ||
     'Account';
 
