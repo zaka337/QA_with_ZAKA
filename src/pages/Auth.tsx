@@ -156,6 +156,7 @@ export default function Auth({ type }: AuthProps) {
         provider,
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
         },
       });
       if (error) throw error;
