@@ -6,8 +6,6 @@ import { Button } from '../components/Button';
 import { useAuth } from '../hooks/useAuth';
 import {
   getEnrollments,
-  enrollInCourse,
-  getFirstCourse,
   getLessonProgress,
   getPlatformSettings,
   type Course,
@@ -195,7 +193,7 @@ export default function Dashboard() {
                     
                     {/* Render Hidden Certificate Template for this Course */}
                     <CertificateTemplate 
-                      ref={el => certRefs.current[data.course.id] = el}
+                      ref={el => { certRefs.current[data.course.id] = el; }}
                       studentName={displayName}
                       courseName={data.course.title}
                       date={new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}

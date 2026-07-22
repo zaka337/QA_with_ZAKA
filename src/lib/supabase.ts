@@ -316,7 +316,6 @@ export async function getRealAdminStats() {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const thisWeek = new Date(today);
   thisWeek.setDate(thisWeek.getDate() - today.getDay());
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   let newStudentsToday = 0;
   let newStudentsWeek = 0;
@@ -326,7 +325,7 @@ export async function getRealAdminStats() {
   const growthMap: Record<string, number> = {};
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  safeProfiles.forEach(p => {
+  safeProfiles.forEach(() => {
     newStudentsToday++;
     newStudentsWeek++;
     newStudentsMonth++;

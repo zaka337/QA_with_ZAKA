@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell 
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from 'recharts';
 import { 
   Users, DollarSign, Activity, BookOpen, Plus, Trash2, Edit2, Save, LayoutDashboard, ListTree, UploadCloud
@@ -10,32 +10,11 @@ import {
   getCourseCurriculum, updateModule, updateLesson, 
   createModule, createLesson, deleteModule, deleteLesson,
   getAllProfiles, updateUserRole, adminEnrollUser,
-  type Module, type Lesson, type Profile
+  type Module, type Profile
 } from '../lib/supabase';
 import { CodeEditor } from '../components/CodeEditor';
 
-// Mock data for the Power BI style charts
-const revenueData = [
-  { name: 'Jan', revenue: 4000 },
-  { name: 'Feb', revenue: 3000 },
-  { name: 'Mar', revenue: 5000 },
-  { name: 'Apr', revenue: 4500 },
-  { name: 'May', revenue: 6000 },
-  { name: 'Jun', revenue: 8000 },
-  { name: 'Jul', revenue: 14250 },
-];
 
-const passFailData = [
-  { name: 'Module 1', passes: 85, fails: 15 },
-  { name: 'Module 2', passes: 60, fails: 40 },
-  { name: 'Module 3', passes: 92, fails: 8 },
-];
-
-const pieData = [
-  { name: 'Active', value: 128 },
-  { name: 'Inactive', value: 14 },
-];
-const COLORS = ['#ea1f27', '#ffffff'];
 
 function LiveClockWidget() {
   const [time, setTime] = useState(new Date());
@@ -63,7 +42,7 @@ function LiveClockWidget() {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content'>('analytics');
   // Data state
   const [stats, setStats] = useState<any>(null);
   const [modules, setModules] = useState<Module[]>([]);

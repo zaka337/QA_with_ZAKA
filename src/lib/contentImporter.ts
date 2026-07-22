@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Course, Module, Lesson } from './supabase';
+
 
 export interface QuizQuestion {
   id: string;
@@ -59,7 +59,7 @@ export async function importCourseContent(courseData: CourseImportData) {
     // 2. Iterate and upsert Modules
     for (const modData of courseData.modules) {
       // Upsert module based on course_id + title to prevent duplicates
-      const { data: moduleRecord, error: modError } = await supabase
+      const { data: moduleRecord } = await supabase
         .from('modules')
         .select('*')
         .eq('course_id', course.id)

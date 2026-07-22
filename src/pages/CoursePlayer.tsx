@@ -35,7 +35,7 @@ export default function CoursePlayer() {
   const [completing, setCompleting] = useState(false);
 
   // For code editor state
-  const [codeValue, setCodeValue] = useState('');
+  const [, setCodeValue] = useState('');
 
   // Terminal Execution State
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
