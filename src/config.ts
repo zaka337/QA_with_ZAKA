@@ -79,28 +79,28 @@ export const capabilitiesConfig: CapabilitiesConfig = {
       slug: "foundations-of-code",
       description:
         "Master the programming core every automation engineer needs: Python or JavaScript, OOP design, data structures, Git workflows, and debugging discipline before touching a framework.",
-      image: "images/capability-1.jpg",
+      image: "images/capability-1.webp",
     },
     {
       title: "UI Test Automation",
       slug: "ui-test-automation",
       description:
         "Deep dive into browser automation with Selenium, Playwright, and Cypress — locators, smart waits, Page Object Model, cross-browser grids, and taming flaky tests for good.",
-      image: "images/capability-2.jpg",
+      image: "images/capability-2.webp",
     },
     {
       title: "API & Backend Testing",
       slug: "api-backend-testing",
       description:
         "Validate the layers beneath the UI: REST and GraphQL testing, Postman and REST Assured, contract testing with Pact, schema validation, and database verification.",
-      image: "images/capability-3.jpg",
+      image: "images/capability-3.webp",
     },
     {
       title: "CI/CD & Quality Ops",
       slug: "cicd-quality-ops",
       description:
         "Ship quality at pipeline speed: GitHub Actions and Jenkins, Dockerized test environments, parallel execution, Allure reporting, and enforcing quality gates on every merge.",
-      image: "images/capability-4.jpg",
+      image: "images/capability-4.webp",
     },
   ],
 };
@@ -220,73 +220,73 @@ export const researchConfig: ResearchConfig = {
       title: "Python for Testers",
       year: "01",
       discipline: "Language Core",
-      image: "images/tool_python.png",
+      image: "images/tool_python.webp",
     },
     {
       title: "Git & Code Review",
       year: "02",
       discipline: "Collaboration",
-      image: "images/tool_git.png",
+      image: "images/tool_git.webp",
     },
     {
       title: "Selenium WebDriver",
       year: "03",
       discipline: "UI Automation",
-      image: "images/tool_selenium.png",
+      image: "images/tool_selenium.webp",
     },
     {
       title: "Playwright",
       year: "04",
       discipline: "UI Automation",
-      image: "images/tool_playwright.png",
+      image: "images/tool_playwright.webp",
     },
     {
       title: "Cypress",
       year: "05",
       discipline: "UI Automation",
-      image: "images/tool_cypress.png",
+      image: "images/tool_cypress.webp",
     },
     {
       title: "Appium Mobile",
       year: "06",
       discipline: "Mobile Automation",
-      image: "images/tool_appium.png",
+      image: "images/tool_appium.webp",
     },
     {
       title: "Postman & REST Assured",
       year: "07",
       discipline: "API Testing",
-      image: "images/tool_postman.png",
+      image: "images/tool_postman.webp",
     },
     {
       title: "Pact Contract Tests",
       year: "08",
       discipline: "API Testing",
-      image: "images/tool_pact.png",
+      image: "images/tool_pact.webp",
     },
     {
       title: "JMeter & k6",
       year: "09",
       discipline: "Performance",
-      image: "images/tool_jmeter.png",
+      image: "images/tool_jmeter.webp",
     },
     {
       title: "Docker for QA",
       year: "10",
       discipline: "Infrastructure",
-      image: "images/qa_tool_2.png", // Temporarily using abstraction due to rate limit
+      image: "images/qa_tool_2.webp", // Temporarily using abstraction due to rate limit
     },
     {
       title: "Jenkins & GH Actions",
       year: "11",
       discipline: "CI/CD",
-      image: "images/qa_tool_4.png", // Temporarily using abstraction due to rate limit
+      image: "images/qa_tool_4.webp", // Temporarily using abstraction due to rate limit
     },
     {
       title: "Allure Reporting",
       year: "12",
       discipline: "Quality Intelligence",
-      image: "images/qa_tool_3.png", // Temporarily using abstraction due to rate limit
+      image: "images/qa_tool_3.webp", // Temporarily using abstraction due to rate limit
     },
   ],
 };

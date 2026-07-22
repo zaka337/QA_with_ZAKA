@@ -110,7 +110,7 @@ export default function Dashboard() {
 
       // 2. Load and add the background image directly (bulletproof rendering)
       const bgImg = new Image();
-      bgImg.src = '/images/completion-certificate.png';
+      bgImg.src = '/images/completion-certificate.webp';
       await new Promise((resolve, reject) => {
         bgImg.onload = resolve;
         bgImg.onerror = reject;
@@ -222,10 +222,10 @@ export default function Dashboard() {
                         }}
                       />
                       
-                      {/* Instructor Image Placeholder (Requires zaka-thumb.png in public folder) */}
+                      {/* Instructor Image Placeholder (Requires zaka-thumb.webp in public folder) */}
                       <div className="absolute right-[-10px] bottom-0 h-[110%] w-[55%] flex items-end justify-end opacity-90 group-hover:scale-105 transition-transform duration-500 z-0 drop-shadow-2xl">
                          <img 
-                           src="/zaka-thumb.png" 
+                           src="/zaka-thumb.webp" 
                            alt="Instructor" 
                            className="object-contain h-full"
                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
