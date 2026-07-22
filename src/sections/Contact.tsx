@@ -144,10 +144,21 @@ export default function Contact() {
             }}
           />
 
-          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-6 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-mono tracking-widest text-white/50 uppercase">Name</label>
+          <style>{`
+            .premium-input:-webkit-autofill,
+            .premium-input:-webkit-autofill:hover, 
+            .premium-input:-webkit-autofill:focus, 
+            .premium-input:-webkit-autofill:active {
+                -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+                transition: background-color 5000s ease-in-out 0s;
+                -webkit-text-fill-color: white !important;
+            }
+          `}</style>
+
+          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-10 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="flex flex-col gap-2 relative">
+                <label className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Name</label>
                 <input
                   type="text"
                   name="name"
@@ -155,11 +166,11 @@ export default function Contact() {
                   onChange={handleChange}
                   required
                   placeholder="John Doe"
-                  className="bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-inter font-light"
+                  className="premium-input w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/60 focus:ring-0 transition-all font-inter font-light"
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-mono tracking-widest text-white/50 uppercase">Email</label>
+              <div className="flex flex-col gap-2 relative">
+                <label className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Email</label>
                 <input
                   type="email"
                   name="email"
@@ -167,21 +178,26 @@ export default function Contact() {
                   onChange={handleChange}
                   required
                   placeholder="john@example.com"
-                  className="bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-inter font-light"
+                  className="premium-input w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/60 focus:ring-0 transition-all font-inter font-light"
                 />
               </div>
             </div>
             
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-mono tracking-widest text-white/50 uppercase">Message</label>
+            <div className="flex flex-col gap-2 relative">
+              <label className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Message</label>
               <textarea
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
                 required
                 placeholder="How can we collaborate?"
-                rows={4}
-                className="bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-inter font-light resize-none"
+                rows={1}
+                className="premium-input w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/60 focus:ring-0 transition-all font-inter font-light resize-none min-h-[40px]"
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${target.scrollHeight}px`;
+                }}
               />
             </div>
 
