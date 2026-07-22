@@ -33,6 +33,12 @@ export default function CinematicVision() {
 
     observer.observe(section);
 
+    // Force video to play for iOS mobile support
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.play().catch((err) => console.log('Video autoplay blocked:', err));
+    }
+
     return () => observer.disconnect();
   }, []);
 
@@ -96,6 +102,7 @@ export default function CinematicVision() {
                 src={architectureConfig.videoPath}
                 autoPlay
                 muted
+                defaultMuted
                 loop
                 playsInline
                 className="w-full h-full object-contain"
