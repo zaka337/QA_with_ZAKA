@@ -18,9 +18,21 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <div className="relative">
+          <style>{`
+            .auth-input:-webkit-autofill,
+            .auth-input:-webkit-autofill:hover,
+            .auth-input:-webkit-autofill:focus,
+            .auth-input:-webkit-autofill:active {
+              -webkit-box-shadow: 0 0 0 30px #0a0a0a inset !important;
+              -webkit-text-fill-color: white !important;
+              transition: background-color 5000s ease-in-out 0s;
+              caret-color: white;
+            }
+          `}</style>
           <input
             ref={ref}
             className={`
+              auth-input
               ${width} 
               bg-transparent 
               border border-white/20 
