@@ -102,7 +102,6 @@ export default function CinematicVision() {
                 src={architectureConfig.videoPath}
                 autoPlay
                 muted
-                defaultMuted
                 loop
                 playsInline
                 className="w-full h-full object-contain"
