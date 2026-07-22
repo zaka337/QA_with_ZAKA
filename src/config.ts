@@ -31,7 +31,7 @@ export const navigationConfig: NavigationConfig = {
     { label: "Learning Path", href: "#curriculum" },
     { label: "Live Demo", href: "#cinematic" },
     { label: "Tool Stack", href: "#alumni" },
-    { label: "Contact", href: "#footer" },
+    { label: "Contact", href: "#contact" },
   ],
   ctaText: "Start Learning",
 };
