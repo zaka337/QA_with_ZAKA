@@ -13,7 +13,7 @@ import {
 import { CertificateTemplate } from '../components/CertificateTemplate';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Download } from 'lucide-react';
+import { Download, BookOpen, CheckCircle, ChevronRight, MonitorPlay } from 'lucide-react';
 
 type EnrolledCourseData = {
   course: Course;
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGeneratingCert, setIsGeneratingCert] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'not_started' | 'in_progress' | 'completed'>('all');
   const certRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const [notes, setNotes] = useState(() => localStorage.getItem('zaka_personal_notes') || '');
@@ -185,24 +186,134 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Continue Learning */}
+        {/* Modern Dashboard Layout */}
+        
+        {/* Continue Learning (Horizontal Scroll) */}
+        {(() => {
+          const inProgressCourses = enrolledCourses.filter(data => {
+            const completedCount = data.progress.filter(p => p.completed).length;
+            const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
+            return progressPct > 0 && progressPct < 100;
+          });
+
+          if (inProgressCourses.length === 0) return null;
+
+          return (
+            <section className="dashboard-item mb-16">
+              <h2 className="text-2xl font-eb-garamond mb-6">Continue Learning</h2>
+              <div className="flex overflow-x-auto pb-8 gap-6 snap-x hide-scrollbar">
+                {inProgressCourses.map((data, index) => {
+                  const completedCount = data.progress.filter(p => p.completed).length;
+                  const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
+                  
+                  return (
+                    <div key={index} className="min-w-[90vw] md:min-w-[600px] flex-shrink-0 snap-start bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors p-6 rounded-none">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        
+                        {/* Thumbnail */}
+                        <div className="w-full md:w-56 aspect-video bg-[#0a0a0a] border border-white/10 relative overflow-hidden flex-shrink-0">
+                          <div 
+                            className="absolute inset-0 opacity-80"
+                            style={{
+                              background: data.course.slug.includes('python') 
+                                ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+                                : 'linear-gradient(135deg, #14532d 0%, #052e16 100%)'
+                            }}
+                          />
+                          <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 w-2/3 transform -rotate-2">
+                            <h4 className="text-[8px] font-mono text-white/70 uppercase tracking-widest mb-1">
+                              {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
+                            </h4>
+                            <h3 className="text-xl leading-none font-black italic uppercase tracking-tighter" style={{ color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff', textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
+                              {data.course.slug.includes('python') ? <>LEARN<br/>PYTHON</> : <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>}
+                            </h3>
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="text-[10px] font-geist text-[#4ade80] mb-2 flex items-center gap-2 tracking-widest uppercase">
+                              <MonitorPlay size={12} /> Course
+                            </div>
+                            <h3 className="text-xl font-eb-garamond mb-4 leading-tight">{data.course.title}</h3>
+                            
+                            <div className="flex items-center gap-4 mb-4">
+                              <span className="text-xs font-geist text-white/50 w-24">Progress: {progressPct}%</span>
+                              <Progress.Root className="h-1 bg-white/10 w-full rounded-none" value={progressPct}>
+                                <Progress.Indicator className="bg-[#4ade80] h-full transition-all duration-1000 ease-out" style={{ width: `${progressPct}%` }} />
+                              </Progress.Root>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-2">
+                            <span className="text-xs font-inter font-light text-white/40 flex items-center gap-2">
+                              Keep up the momentum <ChevronRight size={12}/>
+                            </span>
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/course/${data.course.id}`)}>
+                              Continue
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
+
+        {/* All Materials (Filterable Grid) */}
         <section className="dashboard-item mb-12">
-          <h2 className="text-xl font-eb-garamond mb-6 border-b border-white/10 pb-4">
-            Continue Learning
-          </h2>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/10 pb-6">
+            <h2 className="text-2xl font-eb-garamond flex items-center gap-3">
+              All Materials 
+              <span className="text-xs font-geist bg-white/10 px-2 py-1 rounded-sm text-white/60">
+                {enrolledCourses.length}
+              </span>
+            </h2>
+            
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'all', label: 'All Status' },
+                { id: 'not_started', label: 'Not Started' },
+                { id: 'in_progress', label: 'In Progress' },
+                { id: 'completed', label: 'Completed' }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id as any)}
+                  className={`text-xs font-geist px-4 py-2 uppercase tracking-wider transition-colors border ${
+                    filter === f.id 
+                      ? 'bg-white text-black border-white' 
+                      : 'bg-transparent text-white/50 border-white/10 hover:border-white/30'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {enrolledCourses.length > 0 ? (
-            <div className="space-y-6">
-              {enrolledCourses.map((data, index) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {enrolledCourses.filter(data => {
+                if (filter === 'all') return true;
                 const completedCount = data.progress.filter(p => p.completed).length;
                 const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
-                
+                if (filter === 'not_started') return progressPct === 0;
+                if (filter === 'in_progress') return progressPct > 0 && progressPct < 100;
+                if (filter === 'completed') return progressPct === 100;
+                return true;
+              }).map((data, index) => {
+                const completedCount = data.progress.filter(p => p.completed).length;
+                const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
                 const registrationNumber = `QA-${data.course.id.substring(0, 4).toUpperCase()}-${user?.id?.substring(0, 4).toUpperCase() || '0000'}-${new Date().getFullYear()}`;
 
                 return (
-                  <div key={index} className="relative group overflow-hidden p-6 border border-white/10 bg-white/[0.02] flex flex-col md:flex-row gap-8 items-center hover:bg-white/[0.04] transition-colors duration-500">
-                    
-                    {/* Render Hidden Certificate Template for this Course */}
+                  <div key={index} className="flex flex-col p-6 bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors">
+                    {/* Hidden Certificate logic */}
                     <CertificateTemplate 
                       ref={el => { certRefs.current[data.course.id] = el; }}
                       studentName={displayName}
@@ -211,130 +322,86 @@ export default function Dashboard() {
                       registrationNumber={registrationNumber}
                     />
 
-                    {/* Custom HTML/CSS YouTube-Style Thumbnail */}
-                    <div className="w-full md:w-72 aspect-video bg-[#0a0a0a] border border-white/10 relative overflow-hidden flex-shrink-0 group-hover:border-white/30 group-hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-all duration-500 rounded-sm">
-                      
-                      {/* Background Gradient & Patterns */}
+                    {/* Top Meta */}
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-[10px] font-geist bg-white/5 px-2 py-1 flex items-center gap-2 uppercase tracking-widest text-white/70 border border-white/5">
+                        <BookOpen size={10}/> {data.totalLessons} Chapters
+                      </span>
+                      {progressPct === 100 && (
+                        <span className="text-[10px] font-geist text-[#4ade80] flex items-center gap-1 uppercase tracking-widest">
+                          <CheckCircle size={10}/> Certified
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Thumbnail representation for vertical card */}
+                    <div className="w-full aspect-video bg-[#0a0a0a] border border-white/5 relative overflow-hidden mb-6 opacity-80">
                       <div 
-                        className="absolute inset-0 opacity-80 group-hover:scale-105 transition-transform duration-700"
+                        className="absolute inset-0"
                         style={{
                           background: data.course.slug.includes('python') 
                             ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
                             : 'linear-gradient(135deg, #14532d 0%, #052e16 100%)'
                         }}
                       />
-                      
-                      {/* Geometric Accents */}
-                      <div 
-                        className="absolute right-0 top-0 w-32 h-64 opacity-20 rotate-45 translate-x-16 -translate-y-16"
-                        style={{
-                          background: data.course.slug.includes('python') ? '#FFD43B' : '#4ade80',
-                          filter: 'blur(40px)'
-                        }}
-                      />
-                      
-                      {/* Instructor Image Placeholder (Requires zaka-thumb.webp in public folder) */}
-                      <div className="absolute right-[-10px] bottom-0 h-[110%] w-[55%] flex items-end justify-end opacity-90 group-hover:scale-105 transition-transform duration-500 z-0 drop-shadow-2xl">
-                         <img 
-                           src="/zaka-thumb.webp" 
-                           alt="Instructor" 
-                           className="object-contain h-full"
-                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                         />
-                      </div>
-
-                      {/* Catchline Text */}
-                      <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 w-2/3">
-                        <div className="transform -rotate-2">
-                          <h4 className="text-[10px] font-mono text-white/70 uppercase tracking-widest mb-1">
-                            {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
-                          </h4>
-                          <h3 
-                            className="text-2xl leading-none font-black italic uppercase tracking-tighter"
-                            style={{
-                              color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff',
-                              textShadow: '2px 2px 0px rgba(0,0,0,0.5)'
-                            }}
-                          >
-                            {data.course.slug.includes('python') ? (
-                              <>LEARN<br/>PYTHON</>
-                            ) : (
-                              <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>
-                            )}
-                          </h3>
-                        </div>
-                      </div>
-
-                      {/* Play Button Overlay (Fades in on hover) */}
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/40 shadow-lg scale-90 group-hover:scale-100 transition-all duration-300">
-                          <div className="w-0 h-0 border-t-6 border-t-transparent border-l-8 border-l-white border-b-6 border-b-transparent ml-1" />
-                        </div>
+                      <div className="absolute right-[-10px] bottom-0 h-full w-[60%] flex items-end justify-end z-0">
+                         <img src="/zaka-thumb.webp" alt="Instructor" className="object-contain h-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                       </div>
                     </div>
 
-                    <div className="flex-1 w-full">
-                      <div className="text-xs font-geist text-white/50 uppercase tracking-wider mb-2">
-                        {completedCount} of {data.totalLessons} lessons complete
-                      </div>
-                      <h3 className="text-2xl font-eb-garamond mb-4">{data.course.title}</h3>
-                      {data.course.description && (
-                        <p className="text-white/50 font-inter font-light text-sm mb-4">{data.course.description}</p>
-                      )}
+                    <h3 className="text-xl font-eb-garamond mb-4 flex-grow">{data.course.title}</h3>
+                    
+                    {/* Tags */}
+                    <div className="flex gap-2 mb-6">
+                      <span className="text-[10px] font-inter text-white/40 bg-white/5 px-2 py-1 border border-white/5">QA Automation</span>
+                      <span className="text-[10px] font-inter text-white/40 bg-white/5 px-2 py-1 border border-white/5">
+                        {progressPct === 0 ? 'Not Started' : progressPct === 100 ? 'Completed' : 'In Progress'}
+                      </span>
+                    </div>
 
-                      <div className="mb-4">
-                        <div className="flex justify-between text-xs font-inter font-light text-white/50 mb-2">
-                          <span>Overall Progress</span>
-                          <span>{progressPct}% Complete</span>
-                        </div>
-                        <Progress.Root
-                          className="relative overflow-hidden bg-white/10 rounded-none h-1 w-full"
-                          value={progressPct}
-                        >
-                          <Progress.Indicator
-                            className="bg-white h-full transition-all duration-1000 ease-out"
-                            style={{ width: `${progressPct}%` }}
+                    {/* Footer */}
+                    <div className="flex justify-between items-center border-t border-white/10 pt-4 mt-auto">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full border border-white/20 relative flex items-center justify-center">
+                          <div 
+                            className="absolute inset-0 rounded-full"
+                            style={{
+                              background: `conic-gradient(#4ade80 ${progressPct}%, transparent 0)`
+                            }}
                           />
-                        </Progress.Root>
+                          <div className="w-3 h-3 bg-[#0a0a0a] rounded-full z-10" />
+                        </div>
+                        <span className="text-xs font-geist text-white/60">Progress: {progressPct}%</span>
                       </div>
-
-                      <div className="flex gap-4">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/course/${data.course.id}`)}>
-                          {completedCount === 0 ? 'Start Course' : progressPct === 100 ? 'Replay Course' : 'Resume Lesson'}
-                        </Button>
-                        
-                        {progressPct === 100 && (
+                      
+                      {progressPct === 100 ? (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/course/${data.course.id}`)}>Replay</Button>
                           <Button 
                             variant="primary" 
                             size="sm" 
-                            className="bg-gradient-to-r from-yellow-500 to-yellow-600 border-none text-black hover:opacity-90 transition-opacity"
+                            className="bg-[#4ade80] text-black border-none px-3"
                             onClick={() => handleDownloadCertificate(data.course.id, data.course.title)}
                             disabled={isGeneratingCert === data.course.id}
                           >
-                            {isGeneratingCert === data.course.id ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                                Generating...
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 font-semibold">
-                                <Download size={16} />
-                                Download Certificate
-                              </div>
-                            )}
+                            {isGeneratingCert === data.course.id ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <Download size={14} />}
                           </Button>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/course/${data.course.id}`)}>
+                          {progressPct === 0 ? 'Start' : 'Continue'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="p-8 border border-white/10 text-center text-white/40 font-inter font-light text-sm">
+            <div className="p-12 border border-white/10 text-center text-white/40 font-inter font-light text-sm bg-white/[0.01]">
               No courses enrolled yet.{' '}
-              <button onClick={() => navigate('/pricing')} className="text-white underline underline-offset-4">
-                Browse courses
+              <button onClick={() => navigate('/pricing')} className="text-white hover:text-[#4ade80] transition-colors underline underline-offset-4">
+                Browse our catalog
               </button>
             </div>
           )}
