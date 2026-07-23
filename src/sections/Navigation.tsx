@@ -82,7 +82,7 @@ export default function Navigation() {
 
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  if (!siteConfig.brandName && navigationConfig.links.length === 0) {
+  if (navigationConfig.links.length === 0) {
     return null;
   }
 
