@@ -53,15 +53,26 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 3. Verify Enrollment! 
+    // 3. Verify Enrollment or Global Plan! 
+    // Check if the user has a lifetime/monthly plan on their profile
+    const { data: profile } = await supabaseUserClient
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
+
+    const hasGlobalAccess = profile && (profile.plan === 'lifetime' || profile.plan === 'monthly' || profile.plan === 'admin' || profile.role === 'admin')
+
     // RLS ensures the user can ONLY query their own enrollments.
-    const { data: enrollment, error: enrollmentError } = await supabaseUserClient
+    const { data: enrollment } = await supabaseUserClient
       .from('enrollments')
       .select('id')
       .eq('course_id', lesson.course_id)
       .limit(1)
 
-    if (enrollmentError || !enrollment || enrollment.length === 0) {
+    const hasEnrollment = enrollment && enrollment.length > 0
+
+    if (!hasGlobalAccess && !hasEnrollment) {
       return new Response(JSON.stringify({ error: 'Access Denied: You are not enrolled in this course.' }), {
         status: 403, // 403 Forbidden
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
