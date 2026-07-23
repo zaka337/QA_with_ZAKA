@@ -33,12 +33,28 @@ export default function Dashboard() {
   const [isGeneratingCert, setIsGeneratingCert] = useState<string | null>(null);
   const certRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
+  const [notes, setNotes] = useState(() => localStorage.getItem('zaka_personal_notes') || '');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | ''>('');
+
   const displayName =
     profile?.display_name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email?.split('@')[0] ||
     'Creator';
+
+  // Handle auto-saving notes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (notes !== localStorage.getItem('zaka_personal_notes')) {
+        setSaveStatus('saving');
+        localStorage.setItem('zaka_personal_notes', notes);
+        setTimeout(() => setSaveStatus('saved'), 500);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [notes]);
 
   useEffect(() => {
     if (!user) return;
@@ -330,47 +346,28 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Resources + Community */}
-        <section className="dashboard-item grid md:grid-cols-2 gap-8">
-          <div>
-            <h2 className="text-xl font-eb-garamond mb-6 border-b border-white/10 pb-4">Resources</h2>
-            <ul className="space-y-4">
-              {globalResources?.docs?.map((doc: any, i: number) => (
-                <li
-                  key={i}
-                  className="flex justify-between items-center p-4 border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-colors cursor-pointer"
-                  onClick={() => window.open(doc.url, '_blank', 'noopener,noreferrer')}
-                >
-                  <span className="font-inter font-light text-sm">{doc.title}</span>
-                  <span className="font-geist text-xs text-white/50 uppercase">View</span>
-                </li>
-              ))}
-              {globalResources?.github_url && (
-                <li
-                  className="flex justify-between items-center p-4 border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-colors cursor-pointer"
-                  onClick={() => window.open(globalResources.github_url, '_blank', 'noopener,noreferrer')}
-                >
-                  <span className="font-inter font-light text-sm">Zong Automation Framework</span>
-                  <span className="font-geist text-xs text-white/50 uppercase">GitHub</span>
-                </li>
-              )}
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-eb-garamond mb-6 border-b border-white/10 pb-4">Community</h2>
-            <div className="p-8 border border-white/10 bg-white/[0.02] text-center">
-              <p className="font-inter font-light text-white/70 mb-6 text-sm leading-relaxed">
-                Join the private Discord server to connect with other alumni, share your work, and get direct feedback.
-              </p>
-              <Button 
-                variant="outline" 
-                fullWidth
-                onClick={() => globalResources?.discord_url && window.open(globalResources.discord_url, '_blank', 'noopener,noreferrer')}
-              >
-                Join Discord
-              </Button>
+        {/* Personal Notes */}
+        <section className="dashboard-item">
+          <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+            <h2 className="text-xl font-eb-garamond">Personal Notes</h2>
+            <div className="text-xs font-geist text-white/40 h-4">
+              {saveStatus === 'saving' && 'Saving...'}
+              {saveStatus === 'saved' && 'All changes saved.'}
             </div>
+          </div>
+          
+          <div className="relative group">
+            <textarea
+              value={notes}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                setSaveStatus('');
+              }}
+              placeholder="Jot down important concepts, code snippets, or ideas here. Your notes are automatically saved to your browser..."
+              className="w-full h-64 bg-white/[0.02] border border-white/10 focus:border-white/30 rounded-none p-6 text-white/80 font-inter font-light text-sm outline-none resize-y transition-colors placeholder:text-white/20"
+              spellCheck={false}
+            />
+            <div className="absolute inset-0 pointer-events-none border border-white/0 group-hover:border-white/5 transition-colors" />
           </div>
         </section>
 
