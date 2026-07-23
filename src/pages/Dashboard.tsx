@@ -7,7 +7,6 @@ import { useAuth } from '../hooks/useAuth';
 import {
   getEnrollments,
   getLessonProgress,
-  getPlatformSettings,
   type Course,
   type LessonProgress,
 } from '../lib/supabase';
@@ -28,7 +27,6 @@ export default function Dashboard() {
   const { user, profile, signOut } = useAuth();
 
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourseData[]>([]);
-  const [globalResources, setGlobalResources] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isGeneratingCert, setIsGeneratingCert] = useState<string | null>(null);
   const certRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -86,10 +84,6 @@ export default function Dashboard() {
           );
           setEnrolledCourses(coursesData);
         }
-
-        // 3. Load global settings
-        const settings = await getPlatformSettings('global_resources');
-        if (settings) setGlobalResources(settings);
       } finally {
         setLoading(false);
       }
