@@ -57,7 +57,7 @@ export default function CapabilityDetail() {
             letterSpacing: '-0.5px',
           }}
         >
-          {siteConfig.brandName}
+          <img src="/images/logo.png" alt={siteConfig.brandName} className="h-10 object-contain" />
         </a>
         {capabilityDetailConfig.backLinkText && (
           <a

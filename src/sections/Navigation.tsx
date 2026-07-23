@@ -105,7 +105,7 @@ export default function Navigation() {
           onClick={(e) => handleAnchorClick(e, '#hero')}
           className="text-white no-underline text-base sm:text-lg font-geist tracking-tight z-10"
         >
-          {siteConfig.brandName}
+          <img src="/images/logo.png" alt={siteConfig.brandName} className="h-10 object-contain" />
         </a>
 
         <div className="hidden md:flex items-center gap-10">
