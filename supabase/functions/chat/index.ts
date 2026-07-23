@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from 'npm:@google/generative-ai';
+import { GoogleGenAI } from 'npm:@google/genai@^1.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +24,7 @@ You possess deep knowledge of the website's functionality and must guide users a
 If a user asks how to find something, give them precise instructions based on this map. Keep responses concise and easy to read.`;
 
 Deno.serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -47,22 +47,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: SYSTEM_PROMPT,
+    const ai = new GoogleGenAI({ apiKey });
+
+    // Build conversation contents from history + new message
+    const contents = [
+      ...history.map((h: { role: string; parts: { text: string }[] }) => ({
+        role: h.role,
+        parts: h.parts,
+      })),
+      { role: 'user', parts: [{ text: message }] },
+    ];
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      config: { systemInstruction: SYSTEM_PROMPT },
+      contents,
     });
 
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(message);
-    const responseText = result.response.text();
+    const responseText = response.text;
 
     return new Response(JSON.stringify({ reply: responseText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Edge function error:', err);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

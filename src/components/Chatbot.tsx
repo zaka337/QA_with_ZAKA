@@ -1,7 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import gsap from 'gsap';
-import { supabase } from '../lib/supabase';
+
+const SYSTEM_PROMPT = `You are the official AI Assistant for the 'QA with Zaka' Learning Platform. 
+Your tone should be helpful, professional, and encouraging. 
+
+You possess deep knowledge of the website's functionality and must guide users accurately. Here is the platform map and features:
+1. **Homepage (/)**: The main landing page showcasing our Cinematic Vision, Curriculum, and Alumni Archives.
+2. **Pricing (/pricing)**: We offer two main plans. A Lifetime plan for $199, and a Monthly subscription for $49.
+3. **Authentication (/login, /signup)**: Where users create accounts or log in. Also includes /forgot-password.
+4. **Student Dashboard (/dashboard)**: The main hub for enrolled students. It displays their active courses with real-time progress bars and custom YouTube-style thumbnails.
+5. **Course Player (/course/:courseId)**: An immersive, distraction-free "Cinema Mode" video player where students actually take the lessons.
+6. **Settings (/settings)**: Where users can update their profile information and password.
+7. **Admin Dashboard (/admin)**: A restricted area where platform admins can manage students, enrollments, and import new courses.
+
+**Courses Available**:
+- "Python for QA Testers": Master automated testing with Python.
+- "Software Engineering: Selenium Automation": The complete guide to Selenium.
+
+If a user asks how to find something, give them precise instructions based on this map. Keep responses concise and easy to read.`;
 
 type Message = {
   role: 'user' | 'model';
@@ -56,19 +73,30 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('VITE_GEMINI_API_KEY is not configured in .env');
+
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+
       const history = messages.slice(1).map(msg => ({
         role: msg.role,
         parts: [{ text: msg.content }],
       }));
 
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: { message: userMessage, history }
+      const contents = [
+        ...history,
+        { role: 'user', parts: [{ text: userMessage }] },
+      ];
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        config: { systemInstruction: SYSTEM_PROMPT },
+        contents,
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
+      const responseText = response.text ?? '';
+      setMessages(prev => [...prev, { role: 'model', content: responseText }]);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Chat Error:', error);
