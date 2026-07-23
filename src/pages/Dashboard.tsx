@@ -211,7 +211,8 @@ export default function Dashboard() {
                       <div className="flex flex-col md:flex-row gap-6">
                         
                         {/* Thumbnail */}
-                        <div className="w-full md:w-56 aspect-video bg-[#0a0a0a] border border-white/10 relative overflow-hidden flex-shrink-0">
+                        <div className="w-full md:w-56 aspect-video bg-[#0a0a0a] border border-white/10 relative overflow-hidden flex-shrink-0 group rounded-sm">
+                          {/* Fallback Gradient */}
                           <div 
                             className="absolute inset-0 opacity-80"
                             style={{
@@ -220,13 +221,22 @@ export default function Dashboard() {
                                 : 'linear-gradient(135deg, #14532d 0%, #052e16 100%)'
                             }}
                           />
-                          <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 w-2/3 transform -rotate-2">
-                            <h4 className="text-[8px] font-mono text-white/70 uppercase tracking-widest mb-1">
-                              {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
-                            </h4>
-                            <h3 className="text-xl leading-none font-black italic uppercase tracking-tighter" style={{ color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff', textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
-                              {data.course.slug.includes('python') ? <>LEARN<br/>PYTHON</> : <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>}
-                            </h3>
+                          <img 
+                            src="/zaka-thumb.webp" 
+                            alt="Course" 
+                            className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-transparent z-10" />
+                          <div className="absolute inset-0 p-4 flex flex-col justify-center z-20 w-[85%]">
+                            <div className="transform -rotate-2 group-hover:scale-105 transition-transform duration-500">
+                              <h4 className="text-[8px] font-mono text-white/70 uppercase tracking-widest mb-1">
+                                {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
+                              </h4>
+                              <h3 className="text-xl leading-none font-black italic uppercase tracking-tighter drop-shadow-md" style={{ color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff' }}>
+                                {data.course.slug.includes('python') ? <>LEARN<br/>PYTHON</> : <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>}
+                              </h3>
+                            </div>
                           </div>
                         </div>
 
@@ -334,18 +344,33 @@ export default function Dashboard() {
                       )}
                     </div>
                     
-                    {/* Thumbnail representation for vertical card */}
-                    <div className="w-full aspect-video bg-[#0a0a0a] border border-white/5 relative overflow-hidden mb-6 opacity-80">
+                    {/* Thumbnail */}
+                    <div className="w-full aspect-video bg-[#0a0a0a] border border-white/5 relative overflow-hidden mb-6 group rounded-sm">
+                      {/* Fallback Gradient */}
                       <div 
-                        className="absolute inset-0"
+                        className="absolute inset-0 opacity-80"
                         style={{
                           background: data.course.slug.includes('python') 
                             ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
                             : 'linear-gradient(135deg, #14532d 0%, #052e16 100%)'
                         }}
                       />
-                      <div className="absolute right-[-10px] bottom-0 h-full w-[60%] flex items-end justify-end z-0">
-                         <img src="/zaka-thumb.webp" alt="Instructor" className="object-contain h-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                      <img 
+                        src="/zaka-thumb.webp" 
+                        alt="Course" 
+                        className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-transparent z-10" />
+                      <div className="absolute inset-0 p-6 flex flex-col justify-center z-20 w-[85%]">
+                        <div className="transform -rotate-2 group-hover:scale-105 transition-transform duration-500">
+                          <h4 className="text-[10px] font-mono text-white/70 uppercase tracking-widest mb-1">
+                            {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
+                          </h4>
+                          <h3 className="text-2xl leading-none font-black italic uppercase tracking-tighter drop-shadow-md" style={{ color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff' }}>
+                            {data.course.slug.includes('python') ? <>LEARN<br/>PYTHON</> : <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>}
+                          </h3>
+                        </div>
                       </div>
                     </div>
 
