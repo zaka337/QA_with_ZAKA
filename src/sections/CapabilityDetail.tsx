@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import AmberCascades from './AmberCascades';
-import { siteConfig, capabilityDetailConfig } from '../config';
+import { capabilityDetailConfig } from '../config';
 
 const SLUGS = Object.keys(capabilityDetailConfig.capabilities);
 
@@ -50,14 +50,15 @@ export default function CapabilityDetail() {
           href="/"
           onClick={(e) => { e.preventDefault(); navigate('/'); }}
           className="text-white no-underline"
-          style={{
-            fontFamily: "'GeistMono', monospace",
-            fontSize: 18,
-            fontWeight: 400,
-            letterSpacing: '-0.5px',
-          }}
         >
-          <img src="/images/logo.png" alt={siteConfig.brandName} className="h-10 object-contain" />
+          <div className="flex items-center gap-2 md:gap-3 group">
+            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#4ade80]/20 to-transparent flex items-center justify-center border border-[#4ade80]/30 group-hover:border-[#4ade80]/60 transition-colors">
+              <span className="text-[#4ade80] font-mono font-bold text-lg leading-none mt-0.5">Z</span>
+            </div>
+            <span className="text-white font-eb-garamond tracking-wide text-xl">
+              QA with <span className="text-[#4ade80] font-bold italic">ZAKA</span>
+            </span>
+          </div>
         </a>
         {capabilityDetailConfig.backLinkText && (
           <a

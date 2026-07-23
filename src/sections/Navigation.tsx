@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { siteConfig, navigationConfig } from '../config';
+import { navigationConfig } from '../config';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Navigation() {
@@ -103,9 +103,16 @@ export default function Navigation() {
         <a
           href="#hero"
           onClick={(e) => handleAnchorClick(e, '#hero')}
-          className="text-white no-underline text-base sm:text-lg font-geist tracking-tight z-10"
+          className="text-white no-underline z-10"
         >
-          <img src="/images/logo.png" alt={siteConfig.brandName} className="h-10 object-contain" />
+          <div className="flex items-center gap-2 md:gap-3 group">
+            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#4ade80]/20 to-transparent flex items-center justify-center border border-[#4ade80]/30 group-hover:border-[#4ade80]/60 transition-colors">
+              <span className="text-[#4ade80] font-mono font-bold text-lg leading-none mt-0.5">Z</span>
+            </div>
+            <span className="text-white font-eb-garamond tracking-wide text-xl">
+              QA with <span className="text-[#4ade80] font-bold italic">ZAKA</span>
+            </span>
+          </div>
         </a>
 
         <div className="hidden md:flex items-center gap-10">
