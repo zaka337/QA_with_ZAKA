@@ -105,13 +105,19 @@ export default function Navigation() {
           onClick={(e) => handleAnchorClick(e, '#hero')}
           className="text-white no-underline z-10"
         >
-          <div className="flex items-center gap-2 md:gap-3 group">
-            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#4ade80]/20 to-transparent flex items-center justify-center border border-[#4ade80]/30 group-hover:border-[#4ade80]/60 transition-colors">
-              <span className="text-[#4ade80] font-mono font-bold text-lg leading-none mt-0.5">Z</span>
+          <div className="flex items-center gap-3 group">
+            <div className="relative flex items-center justify-center w-8 h-8">
+              <div className="absolute inset-0 border-[1.5px] border-white/30 rounded-sm rotate-45 group-hover:rotate-180 transition-all duration-700 ease-in-out group-hover:border-white/70"></div>
+              <div className="absolute w-3 h-3 bg-white rounded-[1px] rotate-45 group-hover:bg-[#4ade80] transition-colors duration-700"></div>
             </div>
-            <span className="text-white font-eb-garamond tracking-wide text-xl">
-              QA with <span className="text-[#4ade80] font-bold italic">ZAKA</span>
-            </span>
+            <div className="flex flex-col justify-center">
+              <span className="text-white font-inter font-bold tracking-[0.2em] text-[10px] uppercase leading-none mb-1 opacity-70">
+                QA with
+              </span>
+              <span className="text-white font-eb-garamond text-xl leading-none tracking-wide">
+                ZAKA
+              </span>
+            </div>
           </div>
         </a>
 
