@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://qa-with-zaka-4pc9.vercel.app/sitemap.xml
