@@ -97,11 +97,11 @@ export default function Chatbot() {
             }),
           });
 
-          if (edgeRes.ok) {
-            const edgeData = await edgeRes.json();
-            if (edgeData.reply) {
-              responseText = edgeData.reply;
-            }
+          const edgeData = await edgeRes.json().catch(() => ({}));
+          if (edgeRes.ok && edgeData.reply) {
+            responseText = edgeData.reply;
+          } else if (edgeData.error) {
+            console.warn('Edge function returned error:', edgeData.error);
           }
         } catch {
           // If Edge function fails or isn't deployed yet, fall through to direct API call
