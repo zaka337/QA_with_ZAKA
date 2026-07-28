@@ -1,5 +1,3 @@
-import { GoogleGenAI } from 'npm:@google/genai@^1.0.0';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -39,32 +37,43 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'Gemini API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    // Build OpenAI messages array from history + system prompt + new message
+    const formattedHistory = history.map((h: { role: string; content?: string; parts?: { text: string }[] }) => ({
+      role: h.role === 'model' || h.role === 'assistant' ? 'assistant' : 'user',
+      content: h.content || h.parts?.[0]?.text || '',
+    }));
 
-    // Build conversation contents from history + new message
-    const contents = [
-      ...history.map((h: { role: string; parts: { text: string }[] }) => ({
-        role: h.role,
-        parts: h.parts,
-      })),
-      { role: 'user', parts: [{ text: message }] },
-    ];
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      config: { systemInstruction: SYSTEM_PROMPT },
-      contents,
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...formattedHistory,
+          { role: 'user', content: message },
+        ],
+      }),
     });
 
-    const responseText = response.text;
+    if (!openaiRes.ok) {
+      const errorData = await openaiRes.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `OpenAI API error: ${openaiRes.status}`);
+    }
+
+    const data = await openaiRes.json();
+    const responseText = data.choices?.[0]?.message?.content ?? '';
 
     return new Response(JSON.stringify({ reply: responseText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

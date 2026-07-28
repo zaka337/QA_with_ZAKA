@@ -73,29 +73,77 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error('VITE_GEMINI_API_KEY is not configured in .env');
+      // 1. Try backend Supabase Edge Function first (recommended for production - keeps API key hidden on server)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey });
+      let responseText = '';
 
-      const history = messages.slice(1).map(msg => ({
-        role: msg.role,
-        parts: [{ text: msg.content }],
-      }));
+      if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'https://placeholder.supabase.co') {
+        try {
+          const edgeRes = await fetch(`${supabaseUrl}/functions/v1/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+            },
+            body: JSON.stringify({
+              message: userMessage,
+              history: messages.slice(1).map(msg => ({
+                role: msg.role === 'model' ? 'assistant' : 'user',
+                content: msg.content,
+              })),
+            }),
+          });
 
-      const contents = [
-        ...history,
-        { role: 'user', parts: [{ text: userMessage }] },
-      ];
+          if (edgeRes.ok) {
+            const edgeData = await edgeRes.json();
+            if (edgeData.reply) {
+              responseText = edgeData.reply;
+            }
+          }
+        } catch {
+          // If Edge function fails or isn't deployed yet, fall through to direct API call
+        }
+      }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        config: { systemInstruction: SYSTEM_PROMPT },
-        contents,
-      });
+      // 2. Direct OpenAI API call (if Edge function didn't handle it and client API key exists)
+      if (!responseText) {
+        if (!openAiKey || openAiKey === 'your_openai_api_key_here') {
+          throw new Error('OpenAI API key is missing. Please set VITE_OPENAI_API_KEY in .env or configure OPENAI_API_KEY in Supabase Edge Functions.');
+        }
 
-      const responseText = response.text ?? '';
+        const formattedHistory = messages.slice(1).map(msg => ({
+          role: msg.role === 'model' ? 'assistant' : 'user',
+          content: msg.content,
+        }));
+
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openAiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              ...formattedHistory,
+              { role: 'user', content: userMessage },
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || `OpenAI API request failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        responseText = data.choices?.[0]?.message?.content ?? '';
+      }
+
       setMessages(prev => [...prev, { role: 'model', content: responseText }]);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
