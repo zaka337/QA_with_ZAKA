@@ -8,7 +8,7 @@ export default defineConfig({
   base: '/',
   plugins: [inspectAttr(), react()],
   define: {
-    'process.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || ''),
+    'import.meta.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || ''),
   },
   resolve: {
     alias: {

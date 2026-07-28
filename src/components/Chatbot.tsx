@@ -76,7 +76,7 @@ export default function Chatbot() {
       // 1. Try backend Supabase Edge Function first (recommended for production - keeps API key hidden on server)
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const openAiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY || (typeof process !== 'undefined' && process.env?.OPENAI_API_KEY);
+      const openAiKey = (import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY || (import.meta as any).env?.OPENAI_API_KEY) as string | undefined;
 
       let responseText = '';
 
