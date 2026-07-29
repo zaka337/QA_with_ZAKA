@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import gsap from 'gsap';
+import ReactMarkdown from 'react-markdown';
 
 const SYSTEM_PROMPT = `You are the official AI Assistant for the 'QA with Zaka' Learning Platform. 
 Your tone should be helpful, professional, and encouraging. 
@@ -197,7 +198,34 @@ export default function Chatbot() {
                         : 'bg-white/10 text-white/90 rounded-tl-sm border border-white/5'
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === 'user' ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed text-white/90">{children}</p>,
+                          h1: ({ children }) => <h1 className="text-base font-bold text-amber-400 mt-2 mb-1">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-sm font-bold text-amber-400 mt-2 mb-1">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-sm font-bold text-amber-400 mt-1 mb-1">{children}</h3>,
+                          strong: ({ children }) => <strong className="font-semibold text-amber-300">{children}</strong>,
+                          ul: ({ children }) => <ul className="list-disc list-inside my-1 space-y-1 text-white/90">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside my-1 space-y-1 text-white/90">{children}</ol>,
+                          li: ({ children }) => <li className="leading-snug">{children}</li>,
+                          code: ({ children }) => (
+                            <code className="bg-white/10 text-amber-300 px-1.5 py-0.5 rounded text-xs font-mono">
+                              {children}
+                            </code>
+                          ),
+                          a: ({ href, children }) => (
+                            <a href={href} className="text-amber-400 underline hover:text-amber-300" target="_blank" rel="noreferrer">
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               ))}
