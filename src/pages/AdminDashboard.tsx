@@ -3,14 +3,16 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from 'recharts';
 import { 
-  Users, DollarSign, Activity, BookOpen, Plus, Trash2, Edit2, Save, LayoutDashboard, ListTree, UploadCloud
+  Users, DollarSign, Activity, BookOpen, Plus, Trash2, Edit2, Save, LayoutDashboard, ListTree, UploadCloud,
+  Bell, GraduationCap, UserPlus, CreditCard
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { 
   getCourseCurriculum, updateModule, updateLesson, 
   createModule, createLesson, deleteModule, deleteLesson,
   getAllProfiles, updateUserRole, adminEnrollUser,
-  type Module, type Profile
+  getStudentsWithDetails, getAdminNotifications,
+  type Module, type Profile, type StudentRecord, type AdminNotification
 } from '../lib/supabase';
 import { CodeEditor } from '../components/CodeEditor';
 
@@ -42,14 +44,19 @@ function LiveClockWidget() {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content' | 'students' | 'notifications'>('analytics');
   // Data state
   const [stats, setStats] = useState<any>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [courseId, setCourseId] = useState<string>('');
   const [loadingStats, setLoadingStats] = useState(true);
-  
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [studentsView, setStudentsView] = useState<'all' | 'subscribers'>('all');
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+
   // Editor state
   const [selectedItem, setSelectedItem] = useState<{type: 'module' | 'lesson', id: string} | null>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -78,7 +85,6 @@ export default function AdminDashboard() {
   const loadData = async () => {
     setLoadingStats(true);
     try {
-      // Import the real stats function instead
       const { getRealAdminStats } = await import('../lib/supabase');
       const s = await getRealAdminStats();
       setStats(s);
@@ -99,6 +105,36 @@ export default function AdminDashboard() {
       setLoadingStats(false);
     }
   };
+
+  const loadStudents = async () => {
+    setLoadingStudents(true);
+    try {
+      const data = await getStudentsWithDetails();
+      setStudents(data);
+    } catch (e) {
+      console.error('Failed to load students:', e);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const loadNotifications = async () => {
+    setLoadingNotifications(true);
+    try {
+      const data = await getAdminNotifications();
+      setNotifications(data);
+    } catch (e) {
+      console.error('Failed to load notifications:', e);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Lazy-load students/notifications when tab is first opened
+  useEffect(() => {
+    if (activeTab === 'students' && students.length === 0) loadStudents();
+    if (activeTab === 'notifications' && notifications.length === 0) loadNotifications();
+  }, [activeTab]);
 
   /* ── Handlers ── */
   const handleSelectItem = (type: 'module' | 'lesson', id: string) => {
@@ -216,34 +252,53 @@ export default function AdminDashboard() {
           </div>
           
           {/* Tabs */}
-          <div className="flex flex-wrap sm:flex-nowrap bg-transparent border-2 border-white/20 rounded-none p-1">
+          <div className="flex flex-wrap gap-1 bg-transparent border-2 border-white/20 rounded-none p-1">
             <button 
               onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'analytics' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'analytics' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
             >
               <LayoutDashboard size={14} />
               Analytics
             </button>
             <button 
               onClick={() => setActiveTab('curriculum')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'curriculum' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'curriculum' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
             >
               <ListTree size={14} />
-              Curriculum CMS
+              Curriculum
+            </button>
+            <button 
+              onClick={() => setActiveTab('students')}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'students' ? 'bg-[#ea1f27] text-white' : 'text-white/50 hover:text-white'}`}
+            >
+              <GraduationCap size={14} />
+              Students
+            </button>
+            <button 
+              onClick={() => setActiveTab('notifications')}
+              className={`relative flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'notifications' ? 'bg-amber-500 text-black' : 'text-white/50 hover:text-white'}`}
+            >
+              <Bell size={14} />
+              Notifications
+              {notifications.length > 0 && activeTab !== 'notifications' && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-black text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {notifications.length > 9 ? '9+' : notifications.length}
+                </span>
+              )}
             </button>
             <button 
               onClick={() => setActiveTab('users')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'users' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'users' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
             >
               <Users size={14} />
               User Mgmt
             </button>
             <button 
               onClick={() => setActiveTab('content')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'content' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'content' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
             >
               <UploadCloud size={14} />
-              Content Importer
+              Importer
             </button>
           </div>
         </div>
@@ -631,6 +686,288 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ── Students Tab ── */}
+        {activeTab === 'students' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            {/* Header + Sub-filter */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-white/10 pb-6">
+              <div>
+                <h2 className="text-xl font-ndot tracking-widest uppercase">Student Records</h2>
+                <p className="text-white/40 font-mono text-xs mt-1 uppercase tracking-wider">Complete record of all sign-ups and subscribers</p>
+              </div>
+              <div className="flex items-center gap-1 border-2 border-white/20 p-1">
+                <button
+                  onClick={() => setStudentsView('all')}
+                  className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${studentsView === 'all' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                >
+                  <UserPlus size={13} />
+                  All Sign-ups ({students.length})
+                </button>
+                <button
+                  onClick={() => setStudentsView('subscribers')}
+                  className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${studentsView === 'subscribers' ? 'bg-[#ea1f27] text-white' : 'text-white/50 hover:text-white'}`}
+                >
+                  <CreditCard size={13} />
+                  Subscribers ({students.filter(s => s.plan === 'lifetime' || s.plan === 'monthly').length})
+                </button>
+              </div>
+            </div>
+
+            {loadingStudents ? (
+              <div className="flex flex-col items-center justify-center h-[400px] gap-4 text-white/50">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+                <p className="font-mono text-xs uppercase tracking-widest">Loading student records...</p>
+              </div>
+            ) : (
+              <>
+                {/* ── All Sign-ups View ── */}
+                {studentsView === 'all' && (
+                  <div className="border-2 border-white/10 rounded-none overflow-hidden">
+                    <table className="w-full text-left font-inter text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-white/10 bg-white/[0.02] text-white/40 font-mono text-[10px] uppercase tracking-widest">
+                          <th className="pb-3 pt-3 px-4">User</th>
+                          <th className="pb-3 pt-3 px-4">Plan</th>
+                          <th className="pb-3 pt-3 px-4">Courses Enrolled</th>
+                          <th className="pb-3 pt-3 px-4">Joined</th>
+                          <th className="pb-3 pt-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {students.map(s => (
+                          <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-3">
+                                {s.avatar_url ? (
+                                  <img src={s.avatar_url} alt="" className="w-8 h-8 rounded-full border border-white/20 object-cover shrink-0" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs shrink-0">
+                                    {s.display_name?.[0]?.toUpperCase() || 'U'}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="text-white font-medium text-sm">{s.display_name || 'No Name'}</div>
+                                  <div className="text-white/30 text-[10px] font-mono truncate max-w-[120px]">{s.id}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`inline-flex items-center px-2 py-1 text-[10px] font-mono uppercase tracking-widest border ${
+                                s.plan === 'lifetime' ? 'border-amber-500/50 text-amber-400 bg-amber-500/10' :
+                                s.plan === 'monthly' ? 'border-[#ea1f27]/50 text-[#ea1f27] bg-[#ea1f27]/10' :
+                                'border-white/20 text-white/40'
+                              }`}>
+                                {s.plan === 'lifetime' ? '★ Lifetime' : s.plan === 'monthly' ? '◈ Monthly' : '○ Free'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-white/60 font-mono text-xs">
+                              {s.enrollments.length === 0 ? (
+                                <span className="text-white/25">—</span>
+                              ) : (
+                                <span>{s.enrollments.length} course{s.enrollments.length !== 1 ? 's' : ''}</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4 text-white/40 font-mono text-xs">
+                              {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`w-2 h-2 rounded-full inline-block ${s.plan !== 'free' ? 'bg-green-400' : 'bg-white/20'}`} />
+                            </td>
+                          </tr>
+                        ))}
+                        {students.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="py-12 text-center text-white/30 font-mono text-xs uppercase tracking-widest">
+                              No students found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* ── Subscribers Only View ── */}
+                {studentsView === 'subscribers' && (
+                  <div className="space-y-4">
+                    {students.filter(s => s.plan === 'lifetime' || s.plan === 'monthly').length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-[300px] text-white/30 font-mono text-xs uppercase tracking-widest gap-3">
+                        <CreditCard size={32} className="opacity-20" />
+                        No subscribers yet
+                      </div>
+                    ) : (
+                      students
+                        .filter(s => s.plan === 'lifetime' || s.plan === 'monthly')
+                        .map(s => (
+                          <div key={s.id} className="border-2 border-white/10 hover:border-white/20 transition-colors bg-white/[0.02] p-5 rounded-none">
+                            <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                              {/* Left: User info */}
+                              <div className="flex items-center gap-4">
+                                {s.avatar_url ? (
+                                  <img src={s.avatar_url} alt="" className="w-12 h-12 rounded-full border-2 border-white/20 object-cover shrink-0" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center text-white text-lg shrink-0">
+                                    {s.display_name?.[0]?.toUpperCase() || 'U'}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="text-white font-semibold">{s.display_name || 'No Name'}</div>
+                                  <div className="text-white/30 text-xs font-mono mt-0.5 truncate max-w-[180px]">{s.id}</div>
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest border ${
+                                      s.plan === 'lifetime'
+                                        ? 'border-amber-500/60 text-amber-400 bg-amber-500/10'
+                                        : 'border-[#ea1f27]/60 text-[#ea1f27] bg-[#ea1f27]/10'
+                                    }`}>
+                                      <CreditCard size={10} />
+                                      {s.plan === 'lifetime' ? 'Lifetime — $199' : 'Monthly — $49/mo'}
+                                    </span>
+                                    <span className="text-white/30 font-mono text-[10px]">
+                                      Since {s.enrollments[0]?.enrolled_at
+                                        ? new Date(s.enrollments[0].enrolled_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                        : new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right: Course Progress */}
+                              <div className="flex-1 sm:max-w-xs space-y-3">
+                                {s.courseProgress.length === 0 ? (
+                                  <p className="text-white/25 font-mono text-xs uppercase">No courses enrolled</p>
+                                ) : (
+                                  s.courseProgress.map(cp => {
+                                    const pct = cp.totalLessons > 0 ? Math.round((cp.completedLessons / cp.totalLessons) * 100) : 0;
+                                    return (
+                                      <div key={cp.courseId}>
+                                        <div className="flex justify-between items-center mb-1">
+                                          <span className="text-white/70 text-xs font-mono truncate max-w-[160px]">{cp.courseTitle}</span>
+                                          <span className="text-white/50 text-[10px] font-mono ml-2 shrink-0">{cp.completedLessons}/{cp.totalLessons}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-white/10 rounded-none">
+                                          <div
+                                            className={`h-full transition-all duration-700 ${pct === 100 ? 'bg-green-400' : 'bg-[#ea1f27]'}`}
+                                            style={{ width: `${pct}%` }}
+                                          />
+                                        </div>
+                                        <div className="text-right text-[10px] font-mono text-white/30 mt-0.5">{pct}% complete</div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Notifications Tab ── */}
+        {activeTab === 'notifications' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-white/10 pb-6">
+              <div>
+                <h2 className="text-xl font-ndot tracking-widest uppercase">Notifications</h2>
+                <p className="text-white/40 font-mono text-xs mt-1 uppercase tracking-wider">Real-time feed of platform activity</p>
+              </div>
+              <button
+                onClick={() => loadNotifications()}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest border-2 border-white/20 hover:border-white text-white/50 hover:text-white transition-colors"
+              >
+                <Bell size={13} />
+                Refresh Feed
+              </button>
+            </div>
+
+            {loadingNotifications ? (
+              <div className="flex flex-col items-center justify-center h-[400px] gap-4 text-white/50">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-amber-400 rounded-full animate-spin" />
+                <p className="font-mono text-xs uppercase tracking-widest">Loading notifications...</p>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[300px] gap-4 text-white/30 font-mono text-xs uppercase tracking-widest">
+                <Bell size={36} className="opacity-20" />
+                No activity yet
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Legend */}
+                <div className="flex items-center gap-6 pb-2 text-[10px] font-mono uppercase tracking-widest text-white/30">
+                  <span className="flex items-center gap-1.5"><UserPlus size={11} className="text-green-400" /> Sign-up</span>
+                  <span className="flex items-center gap-1.5"><CreditCard size={11} className="text-amber-400" /> Subscription</span>
+                </div>
+                {notifications.map(n => {
+                  const isSignup = n.type === 'signup';
+                  const timeAgo = (() => {
+                    const diff = Date.now() - new Date(n.timestamp).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    const hrs = Math.floor(diff / 3600000);
+                    const days = Math.floor(diff / 86400000);
+                    if (days > 0) return `${days}d ago`;
+                    if (hrs > 0) return `${hrs}h ago`;
+                    if (mins > 0) return `${mins}m ago`;
+                    return 'just now';
+                  })();
+
+                  return (
+                    <div
+                      key={n.id}
+                      className={`flex items-center gap-4 p-4 border-l-4 bg-white/[0.02] border-r border-t border-b border-white/5 transition-colors hover:bg-white/[0.04] ${
+                        isSignup ? 'border-l-green-500/60' : 'border-l-amber-500/60'
+                      }`}
+                    >
+                      {/* Avatar */}
+                      {n.avatarUrl ? (
+                        <img src={n.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-white/20 object-cover shrink-0" />
+                      ) : (
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm shrink-0 ${isSignup ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'}`}>
+                          {n.userName?.[0]?.toUpperCase() || (isSignup ? <UserPlus size={16} /> : <CreditCard size={16} />)}
+                        </div>
+                      )}
+
+                      {/* Icon badge */}
+                      <div className={`shrink-0 ${isSignup ? 'text-green-400' : 'text-amber-400'}`}>
+                        {isSignup ? <UserPlus size={16} /> : <CreditCard size={16} />}
+                      </div>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">
+                          <span className="text-white">{n.userName || 'Anonymous'}</span>
+                          {' '}
+                          <span className="text-white/50">
+                            {isSignup
+                              ? 'just joined the platform'
+                              : `subscribed to ${n.plan === 'lifetime' ? 'Lifetime Plan ($199)' : 'Monthly Plan ($49/mo)'}`}
+                          </span>
+                        </p>
+                        <p className="text-white/25 text-[10px] font-mono mt-0.5 uppercase tracking-wider">
+                          {new Date(n.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {' · '}{timeAgo}
+                        </p>
+                      </div>
+
+                      {/* Type badge */}
+                      <span className={`shrink-0 text-[9px] font-mono uppercase tracking-widest px-2 py-1 border ${
+                        isSignup
+                          ? 'border-green-500/30 text-green-400 bg-green-500/5'
+                          : 'border-amber-500/30 text-amber-400 bg-amber-500/5'
+                      }`}>
+                        {isSignup ? 'sign-up' : 'subscribed'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

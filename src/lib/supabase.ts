@@ -423,3 +423,162 @@ export async function getRealAdminStats() {
     moduleProgress
   };
 }
+
+/* ── Student Records ─────────────────────────────────────── */
+
+export type StudentCourseProgress = {
+  courseId: string;
+  courseTitle: string;
+  completedLessons: number;
+  totalLessons: number;
+};
+
+export type StudentRecord = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  plan: string;
+  role: string;
+  created_at: string;
+  enrollments: {
+    course_id: string;
+    plan: string;
+    enrolled_at: string;
+  }[];
+  courseProgress: StudentCourseProgress[];
+};
+
+export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
+  // Fetch all profiles
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (!profiles || profiles.length === 0) return [];
+
+  // Fetch all enrollments
+  const { data: enrollments } = await supabase
+    .from('enrollments')
+    .select('user_id, course_id, plan, enrolled_at');
+
+  // Fetch all courses
+  const { data: courses } = await supabase
+    .from('courses')
+    .select('id, title');
+
+  // Fetch all lessons with module→course join
+  const { data: lessons } = await supabase
+    .from('lessons')
+    .select('id, modules!inner(course_id)');
+
+  // Fetch all completed lesson progress
+  const { data: progress } = await supabase
+    .from('lesson_progress')
+    .select('user_id, lesson_id, completed');
+
+  const safeEnrollments = enrollments || [];
+  const safeCourses = courses || [];
+  const safeLessons = lessons || [];
+  const safeProgress = progress || [];
+
+  // Build lesson→course map
+  const lessonCourseMap: Record<string, string> = {};
+  safeLessons.forEach((l: any) => {
+    lessonCourseMap[l.id] = l.modules?.course_id;
+  });
+
+  // Build total lessons per course
+  const totalLessonsPerCourse: Record<string, number> = {};
+  safeLessons.forEach((l: any) => {
+    const cid = l.modules?.course_id;
+    if (cid) totalLessonsPerCourse[cid] = (totalLessonsPerCourse[cid] || 0) + 1;
+  });
+
+  return profiles.map((profile: Profile) => {
+    const userEnrollments = safeEnrollments.filter((e: any) => e.user_id === profile.id);
+    const userProgress = safeProgress.filter((p: any) => p.user_id === profile.id && p.completed);
+
+    const courseProgress: StudentCourseProgress[] = userEnrollments.map((e: any) => {
+      const course = safeCourses.find((c: any) => c.id === e.course_id);
+      const completedLessons = userProgress.filter(
+        (p: any) => lessonCourseMap[p.lesson_id] === e.course_id
+      ).length;
+      return {
+        courseId: e.course_id,
+        courseTitle: course?.title || 'Unknown Course',
+        completedLessons,
+        totalLessons: totalLessonsPerCourse[e.course_id] || 0,
+      };
+    });
+
+    return {
+      ...profile,
+      enrollments: userEnrollments.map((e: any) => ({
+        course_id: e.course_id,
+        plan: e.plan,
+        enrolled_at: e.enrolled_at,
+      })),
+      courseProgress,
+    };
+  });
+}
+
+/* ── Admin Notifications ─────────────────────────────────── */
+
+export type AdminNotification = {
+  id: string;
+  type: 'signup' | 'subscription';
+  userId: string;
+  userName: string | null;
+  avatarUrl: string | null;
+  plan?: string;
+  timestamp: string;
+};
+
+export async function getAdminNotifications(): Promise<AdminNotification[]> {
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name, avatar_url, plan, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  const { data: enrollments } = await supabase
+    .from('enrollments')
+    .select('user_id, plan, enrolled_at, profiles(display_name, avatar_url)')
+    .in('plan', ['lifetime', 'monthly'])
+    .order('enrolled_at', { ascending: false })
+    .limit(100);
+
+  const notifications: AdminNotification[] = [];
+
+  // Sign-up notifications
+  (profiles || []).forEach((p: any) => {
+    notifications.push({
+      id: `signup-${p.id}`,
+      type: 'signup',
+      userId: p.id,
+      userName: p.display_name,
+      avatarUrl: p.avatar_url,
+      timestamp: p.created_at,
+    });
+  });
+
+  // Subscription notifications
+  (enrollments || []).forEach((e: any) => {
+    notifications.push({
+      id: `sub-${e.user_id}-${e.plan}-${e.enrolled_at}`,
+      type: 'subscription',
+      userId: e.user_id,
+      userName: e.profiles?.display_name || null,
+      avatarUrl: e.profiles?.avatar_url || null,
+      plan: e.plan,
+      timestamp: e.enrolled_at,
+    });
+  });
+
+  // Sort newest first
+  return notifications.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+}
