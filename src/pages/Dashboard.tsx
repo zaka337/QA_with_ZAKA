@@ -264,8 +264,8 @@ export default function Dashboard() {
                   const visual = getCourseVisual(data.course);
 
                   return (
-                    <div key={index} className="min-w-[90vw] md:min-w-[600px] flex-shrink-0 snap-start bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors p-6 rounded-none">
-                      <div className="flex flex-col md:flex-row gap-6">
+                    <div key={index} className="w-[90vw] max-w-[90vw] md:w-[600px] md:max-w-[600px] flex-shrink-0 snap-start bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors p-6 rounded-none">
+                      <div className="flex flex-col md:flex-row gap-6 min-w-0">
 
                         {/* Thumbnail */}
                         <div
@@ -297,13 +297,13 @@ export default function Dashboard() {
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 flex flex-col justify-between">
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
                             <div className="text-[10px] font-geist text-[#4ade80] mb-2 flex items-center gap-2 tracking-widest uppercase">
                               <MonitorPlay size={12} /> Course
                             </div>
-                            <h3 className="text-xl font-eb-garamond mb-4 leading-tight">{data.course.title}</h3>
-                            
+                            <h3 className="text-xl font-eb-garamond mb-4 leading-tight break-words">{data.course.title}</h3>
+
                             <div className="flex items-center gap-4 mb-4">
                               <span className="text-xs font-geist text-white/50 w-24">Progress: {progressPct}%</span>
                               <Progress.Root className="h-1 bg-white/10 w-full rounded-none" value={progressPct}>
@@ -431,7 +431,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <h3 className="text-xl font-eb-garamond mb-4 flex-grow">{data.course.title}</h3>
+                    <h3 className="text-xl font-eb-garamond mb-4 flex-grow break-words">{data.course.title}</h3>
 
                     {/* Tags */}
                     <div className="flex gap-2 mb-6">
