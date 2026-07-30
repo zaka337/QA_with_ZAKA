@@ -56,6 +56,15 @@ export default function AdminDashboard() {
   const [studentsView, setStudentsView] = useState<'all' | 'subscribers'>('all');
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+
+  const toggleStudentProgress = (id: string) => {
+    setExpandedStudents(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // Editor state
   const [selectedItem, setSelectedItem] = useState<{type: 'module' | 'lesson', id: string} | null>(null);
@@ -463,26 +472,26 @@ export default function AdminDashboard() {
               <ScrollArea.Root className="flex-1 overflow-hidden">
                 <ScrollArea.Viewport className="w-full h-full p-4">
                   {modules.map(mod => (
-                    <div key={mod.id} className="mb-6">
-                      <div 
-                        className={`flex items-center justify-between p-2 rounded-none cursor-pointer transition-colors ${selectedItem?.id === mod.id ? 'bg-[#ea1f27] text-white' : 'hover:bg-white/10 text-white/70'}`}
+                    <div key={mod.id} className="mb-6 min-w-0">
+                      <div
+                        className={`flex items-center justify-between gap-2 p-2 rounded-none cursor-pointer transition-colors min-w-0 ${selectedItem?.id === mod.id ? 'bg-[#ea1f27] text-white' : 'hover:bg-white/10 text-white/70'}`}
                         onClick={() => handleSelectItem('module', mod.id)}
                       >
-                        <span className="font-semibold text-sm uppercase tracking-wider">{mod.title}</span>
-                        <button onClick={(e) => { e.stopPropagation(); handleCreateLesson(mod.id); }} className="text-white/40 hover:text-white p-1">
+                        <span className="font-semibold text-sm uppercase tracking-wider truncate min-w-0 flex-1">{mod.title}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleCreateLesson(mod.id); }} className="text-white/40 hover:text-white p-1 flex-shrink-0">
                           <Plus size={14} />
                         </button>
                       </div>
-                      
-                      <div className="pl-4 mt-2 border-l-2 border-dashed border-[#333] space-y-1">
+
+                      <div className="pl-4 mt-2 border-l-2 border-dashed border-[#333] space-y-1 min-w-0">
                         {mod.lessons.map(lesson => (
-                          <div 
-                            key={lesson.id} 
+                          <div
+                            key={lesson.id}
                             onClick={() => handleSelectItem('lesson', lesson.id)}
-                            className={`flex items-center gap-2 p-2 rounded-none cursor-pointer text-xs font-mono uppercase tracking-wider transition-colors ${selectedItem?.id === lesson.id ? 'bg-white text-black' : 'hover:bg-white/10 text-[#888] hover:text-white'}`}
+                            className={`flex items-center gap-2 p-2 rounded-none cursor-pointer text-xs font-mono uppercase tracking-wider transition-colors min-w-0 ${selectedItem?.id === lesson.id ? 'bg-white text-black' : 'hover:bg-white/10 text-[#888] hover:text-white'}`}
                           >
                             <BookOpen size={14} className="flex-shrink-0" />
-                            <span className="truncate">{lesson.title}</span>
+                            <span className="truncate min-w-0 flex-1">{lesson.title}</span>
                           </div>
                         ))}
                       </div>
@@ -725,69 +734,114 @@ export default function AdminDashboard() {
               <>
                 {/* ── All Sign-ups View ── */}
                 {studentsView === 'all' && (
-                  <div className="border-2 border-white/10 rounded-none overflow-hidden">
-                    <table className="w-full text-left font-inter text-sm">
-                      <thead>
-                        <tr className="border-b-2 border-white/10 bg-white/[0.02] text-white/40 font-mono text-[10px] uppercase tracking-widest">
-                          <th className="pb-3 pt-3 px-4">User</th>
-                          <th className="pb-3 pt-3 px-4">Plan</th>
-                          <th className="pb-3 pt-3 px-4">Courses Enrolled</th>
-                          <th className="pb-3 pt-3 px-4">Joined</th>
-                          <th className="pb-3 pt-3 px-4">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {students.map(s => (
-                          <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-                            <td className="py-4 px-4">
-                              <div className="flex items-center gap-3">
-                                {s.avatar_url ? (
-                                  <img src={s.avatar_url} alt="" className="w-8 h-8 rounded-full border border-white/20 object-cover shrink-0" />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs shrink-0">
-                                    {s.display_name?.[0]?.toUpperCase() || 'U'}
-                                  </div>
-                                )}
-                                <div>
-                                  <div className="text-white font-medium text-sm">{s.display_name || 'No Name'}</div>
-                                  <div className="text-white/30 text-[10px] font-mono truncate max-w-[120px]">{s.id}</div>
-                                </div>
+                  <>
+                    {/* Mobile card view */}
+                    <div className="grid grid-cols-1 gap-3 sm:hidden">
+                      {students.map(s => (
+                        <div key={s.id} className="border-2 border-white/10 p-4 bg-white/[0.02]">
+                          <div className="flex items-center gap-3 mb-3">
+                            {s.avatar_url ? (
+                              <img src={s.avatar_url} alt="" className="w-9 h-9 rounded-full border border-white/20 object-cover shrink-0" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs shrink-0">
+                                {s.display_name?.[0]?.toUpperCase() || 'U'}
                               </div>
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`inline-flex items-center px-2 py-1 text-[10px] font-mono uppercase tracking-widest border ${
-                                s.plan === 'lifetime' ? 'border-amber-500/50 text-amber-400 bg-amber-500/10' :
-                                s.plan === 'monthly' ? 'border-[#ea1f27]/50 text-[#ea1f27] bg-[#ea1f27]/10' :
-                                'border-white/20 text-white/40'
-                              }`}>
-                                {s.plan === 'lifetime' ? '★ Lifetime' : s.plan === 'monthly' ? '◈ Monthly' : '○ Free'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-white/60 font-mono text-xs">
-                              {s.enrollments.length === 0 ? (
-                                <span className="text-white/25">—</span>
-                              ) : (
-                                <span>{s.enrollments.length} course{s.enrollments.length !== 1 ? 's' : ''}</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 text-white/40 font-mono text-xs">
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="text-white font-medium text-sm truncate">{s.display_name || 'No Name'}</div>
+                              <div className="text-white/30 text-[10px] font-mono truncate">{s.id}</div>
+                            </div>
+                            <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${s.plan !== 'free' ? 'bg-green-400' : 'bg-white/20'}`} />
+                          </div>
+                          <div className="flex items-center justify-between text-xs font-mono">
+                            <span className={`inline-flex items-center px-2 py-1 text-[10px] uppercase tracking-widest border ${
+                              s.plan === 'lifetime' ? 'border-amber-500/50 text-amber-400 bg-amber-500/10' :
+                              s.plan === 'monthly' ? 'border-[#ea1f27]/50 text-[#ea1f27] bg-[#ea1f27]/10' :
+                              'border-white/20 text-white/40'
+                            }`}>
+                              {s.plan === 'lifetime' ? '★ Lifetime' : s.plan === 'monthly' ? '◈ Monthly' : '○ Free'}
+                            </span>
+                            <span className="text-white/60">
+                              {s.enrollments.length === 0 ? '—' : `${s.enrollments.length} course${s.enrollments.length !== 1 ? 's' : ''}`}
+                            </span>
+                            <span className="text-white/40">
                               {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`w-2 h-2 rounded-full inline-block ${s.plan !== 'free' ? 'bg-green-400' : 'bg-white/20'}`} />
-                            </td>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {students.length === 0 && (
+                        <div className="py-12 text-center text-white/30 font-mono text-xs uppercase tracking-widest border-2 border-white/10">
+                          No students found
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop table view */}
+                    <div className="hidden sm:block border-2 border-white/10 rounded-none overflow-x-auto">
+                      <table className="w-full text-left font-inter text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-white/10 bg-white/[0.02] text-white/40 font-mono text-[10px] uppercase tracking-widest">
+                            <th className="pb-3 pt-3 px-4">User</th>
+                            <th className="pb-3 pt-3 px-4">Plan</th>
+                            <th className="pb-3 pt-3 px-4">Courses Enrolled</th>
+                            <th className="pb-3 pt-3 px-4">Joined</th>
+                            <th className="pb-3 pt-3 px-4">Status</th>
                           </tr>
-                        ))}
-                        {students.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="py-12 text-center text-white/30 font-mono text-xs uppercase tracking-widest">
-                              No students found
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {students.map(s => (
+                            <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                              <td className="py-4 px-4">
+                                <div className="flex items-center gap-3">
+                                  {s.avatar_url ? (
+                                    <img src={s.avatar_url} alt="" className="w-8 h-8 rounded-full border border-white/20 object-cover shrink-0" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs shrink-0">
+                                      {s.display_name?.[0]?.toUpperCase() || 'U'}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="text-white font-medium text-sm">{s.display_name || 'No Name'}</div>
+                                    <div className="text-white/30 text-[10px] font-mono truncate max-w-[120px]">{s.id}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`inline-flex items-center px-2 py-1 text-[10px] font-mono uppercase tracking-widest border ${
+                                  s.plan === 'lifetime' ? 'border-amber-500/50 text-amber-400 bg-amber-500/10' :
+                                  s.plan === 'monthly' ? 'border-[#ea1f27]/50 text-[#ea1f27] bg-[#ea1f27]/10' :
+                                  'border-white/20 text-white/40'
+                                }`}>
+                                  {s.plan === 'lifetime' ? '★ Lifetime' : s.plan === 'monthly' ? '◈ Monthly' : '○ Free'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-white/60 font-mono text-xs">
+                                {s.enrollments.length === 0 ? (
+                                  <span className="text-white/25">—</span>
+                                ) : (
+                                  <span>{s.enrollments.length} course{s.enrollments.length !== 1 ? 's' : ''}</span>
+                                )}
+                              </td>
+                              <td className="py-4 px-4 text-white/40 font-mono text-xs">
+                                {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`w-2 h-2 rounded-full inline-block ${s.plan !== 'free' ? 'bg-green-400' : 'bg-white/20'}`} />
+                              </td>
+                            </tr>
+                          ))}
+                          {students.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="py-12 text-center text-white/30 font-mono text-xs uppercase tracking-widest">
+                                No students found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
 
                 {/* ── Subscribers Only View ── */}
@@ -801,11 +855,13 @@ export default function AdminDashboard() {
                     ) : (
                       students
                         .filter(s => s.plan === 'lifetime' || s.plan === 'monthly')
-                        .map(s => (
+                        .map(s => {
+                          const isExpanded = expandedStudents.has(s.id);
+                          return (
                           <div key={s.id} className="border-2 border-white/10 hover:border-white/20 transition-colors bg-white/[0.02] p-5 rounded-none">
                             <div className="flex flex-col sm:flex-row gap-4 justify-between">
                               {/* Left: User info */}
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-4 min-w-0">
                                 {s.avatar_url ? (
                                   <img src={s.avatar_url} alt="" className="w-12 h-12 rounded-full border-2 border-white/20 object-cover shrink-0" />
                                 ) : (
@@ -813,10 +869,10 @@ export default function AdminDashboard() {
                                     {s.display_name?.[0]?.toUpperCase() || 'U'}
                                   </div>
                                 )}
-                                <div>
-                                  <div className="text-white font-semibold">{s.display_name || 'No Name'}</div>
+                                <div className="min-w-0">
+                                  <div className="text-white font-semibold truncate">{s.display_name || 'No Name'}</div>
                                   <div className="text-white/30 text-xs font-mono mt-0.5 truncate max-w-[180px]">{s.id}</div>
-                                  <div className="mt-2 flex items-center gap-2">
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest border ${
                                       s.plan === 'lifetime'
                                         ? 'border-amber-500/60 text-amber-400 bg-amber-500/10'
@@ -834,8 +890,25 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
 
-                              {/* Right: Course Progress */}
-                              <div className="flex-1 sm:max-w-xs space-y-3">
+                              {/* Right: Progress toggle */}
+                              <div className="shrink-0 flex sm:items-start">
+                                <button
+                                  onClick={() => toggleStudentProgress(s.id)}
+                                  className={`flex items-center gap-2 px-4 py-2 text-[10px] font-mono uppercase tracking-widest border transition-colors w-full sm:w-auto justify-center ${
+                                    isExpanded
+                                      ? 'bg-white text-black border-white'
+                                      : 'border-white/20 text-white/60 hover:border-white/40 hover:text-white'
+                                  }`}
+                                >
+                                  <GraduationCap size={12} />
+                                  {isExpanded ? 'Hide Progress' : 'View Progress'} ({s.courseProgress.length})
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Expanded: Course Progress */}
+                            {isExpanded && (
+                              <div className="mt-4 pt-4 border-t border-white/10 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                 {s.courseProgress.length === 0 ? (
                                   <p className="text-white/25 font-mono text-xs uppercase">No courses enrolled</p>
                                 ) : (
@@ -843,9 +916,9 @@ export default function AdminDashboard() {
                                     const pct = cp.totalLessons > 0 ? Math.round((cp.completedLessons / cp.totalLessons) * 100) : 0;
                                     return (
                                       <div key={cp.courseId}>
-                                        <div className="flex justify-between items-center mb-1">
-                                          <span className="text-white/70 text-xs font-mono truncate max-w-[160px]">{cp.courseTitle}</span>
-                                          <span className="text-white/50 text-[10px] font-mono ml-2 shrink-0">{cp.completedLessons}/{cp.totalLessons}</span>
+                                        <div className="flex justify-between items-center mb-1 gap-2">
+                                          <span className="text-white/70 text-xs font-mono truncate min-w-0">{cp.courseTitle}</span>
+                                          <span className="text-white/50 text-[10px] font-mono shrink-0">{cp.completedLessons}/{cp.totalLessons}</span>
                                         </div>
                                         <div className="w-full h-1.5 bg-white/10 rounded-none">
                                           <div
@@ -859,9 +932,10 @@ export default function AdminDashboard() {
                                   })
                                 )}
                               </div>
-                            </div>
+                            )}
                           </div>
-                        ))
+                          );
+                        })
                     )}
                   </div>
                 )}
