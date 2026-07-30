@@ -21,6 +21,61 @@ type EnrolledCourseData = {
   totalLessons: number;
 };
 
+type CourseVisual = {
+  gradient: string;
+  badge: string;
+  titleLines: React.ReactNode;
+  accent: string;
+};
+
+const COURSE_VISUALS: Record<string, CourseVisual> = {
+  python: {
+    gradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+    badge: 'QA Automation',
+    accent: '#FFD43B',
+    titleLines: <>LEARN<br />PYTHON</>,
+  },
+  selenium: {
+    gradient: 'linear-gradient(135deg, #14532d 0%, #052e16 100%)',
+    badge: 'Master The Craft',
+    accent: '#4ade80',
+    titleLines: <>SELENIUM<br /><span style={{ color: '#4ade80' }}>AUTOMATION</span></>,
+  },
+  playwright: {
+    gradient: 'linear-gradient(135deg, #0f2027 0%, #003b36 50%, #001a17 100%)',
+    badge: 'Modern E2E Testing',
+    accent: '#2ee6c8',
+    titleLines: <>PLAY<span style={{ color: '#2ee6c8' }}>WRIGHT</span></>,
+  },
+  appium: {
+    gradient: 'linear-gradient(135deg, #2b0f3a 0%, #150621 60%, #05000a 100%)',
+    badge: 'Mobile Automation',
+    accent: '#a78bfa',
+    titleLines: <>APPIUM<br /><span style={{ color: '#a78bfa' }}>MOBILE</span></>,
+  },
+};
+
+const FALLBACK_GRADIENTS = [
+  'linear-gradient(135deg, #3b0764 0%, #0f0a2e 100%)',
+  'linear-gradient(135deg, #7c2d12 0%, #1c0a05 100%)',
+  'linear-gradient(135deg, #1e3a8a 0%, #0a0f2e 100%)',
+];
+
+function getCourseVisual(course: Course): CourseVisual {
+  const key = Object.keys(COURSE_VISUALS).find(k => course.slug?.includes(k));
+  if (key) return COURSE_VISUALS[key];
+
+  // Deterministic fallback for any future course that doesn't match a known slug —
+  // avoids ever silently mislabeling a course as "Selenium" again.
+  const hash = course.slug?.split('').reduce((a, c) => a + c.charCodeAt(0), 0) ?? 0;
+  return {
+    gradient: FALLBACK_GRADIENTS[hash % FALLBACK_GRADIENTS.length],
+    badge: 'QA Automation',
+    accent: '#ffffff',
+    titleLines: course.title.toUpperCase(),
+  };
+}
+
 export default function Dashboard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -206,35 +261,36 @@ export default function Dashboard() {
                   const completedCount = data.progress.filter(p => p.completed).length;
                   const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
                   
+                  const visual = getCourseVisual(data.course);
+
                   return (
                     <div key={index} className="min-w-[90vw] md:min-w-[600px] flex-shrink-0 snap-start bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors p-6 rounded-none">
                       <div className="flex flex-col md:flex-row gap-6">
-                        
+
                         {/* Thumbnail */}
-                        <div className="w-full md:w-56 aspect-video bg-[#0a0a0a] border border-white/10 relative overflow-hidden flex-shrink-0 group rounded-sm">
-                          {/* Fallback Gradient */}
-                          <div 
-                            className="absolute inset-0 opacity-80"
-                            style={{
-                              background: data.course.slug.includes('python') 
-                                ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
-                                : 'linear-gradient(135deg, #14532d 0%, #052e16 100%)'
-                            }}
+                        <div
+                          className="w-full md:w-56 aspect-video bg-[#0a0a0a] border relative overflow-hidden flex-shrink-0 group rounded-sm transition-shadow duration-500"
+                          style={{ borderColor: `${visual.accent}33`, boxShadow: `0 0 0 1px ${visual.accent}22` }}
+                        >
+                          <div
+                            className="absolute inset-0 opacity-90 transition-transform duration-700 group-hover:scale-110"
+                            style={{ background: visual.gradient }}
                           />
-                          <img 
-                            src="/zaka-thumb.webp" 
-                            alt="Course" 
-                            className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          <div
+                            className="absolute -inset-8 opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-50"
+                            style={{ background: `radial-gradient(circle at 30% 30%, ${visual.accent}55, transparent 60%)` }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-transparent z-10" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
                           <div className="absolute inset-0 p-4 flex flex-col justify-center z-20 w-[85%]">
-                            <div className="transform -rotate-2 group-hover:scale-105 transition-transform duration-500">
-                              <h4 className="text-[8px] font-mono text-white/70 uppercase tracking-widest mb-1">
-                                {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
+                            <div className="transform -rotate-2 group-hover:scale-105 group-hover:-rotate-1 transition-transform duration-500">
+                              <h4
+                                className="text-[8px] font-mono uppercase tracking-widest mb-1 inline-block px-1.5 py-0.5 border rounded-sm"
+                                style={{ color: visual.accent, borderColor: `${visual.accent}55`, background: `${visual.accent}11` }}
+                              >
+                                {visual.badge}
                               </h4>
-                              <h3 className="text-xl leading-none font-black italic uppercase tracking-tighter drop-shadow-md" style={{ color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff' }}>
-                                {data.course.slug.includes('python') ? <>LEARN<br/>PYTHON</> : <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>}
+                              <h3 className="text-xl leading-none font-black italic uppercase tracking-tighter drop-shadow-md text-white mt-1">
+                                {visual.titleLines}
                               </h3>
                             </div>
                           </div>
@@ -321,10 +377,12 @@ export default function Dashboard() {
                 const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
                 const registrationNumber = `QA-${data.course.id.substring(0, 4).toUpperCase()}-${user?.id?.substring(0, 4).toUpperCase() || '0000'}-${new Date().getFullYear()}`;
 
+                const visual = getCourseVisual(data.course);
+
                 return (
                   <div key={index} className="flex flex-col p-6 bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors">
                     {/* Hidden Certificate logic */}
-                    <CertificateTemplate 
+                    <CertificateTemplate
                       ref={el => { certRefs.current[data.course.id] = el; }}
                       studentName={displayName}
                       courseName={data.course.title}
@@ -343,42 +401,41 @@ export default function Dashboard() {
                         </span>
                       )}
                     </div>
-                    
+
                     {/* Thumbnail */}
-                    <div className="w-full aspect-video bg-[#0a0a0a] border border-white/5 relative overflow-hidden mb-6 group rounded-sm">
-                      {/* Fallback Gradient */}
-                      <div 
-                        className="absolute inset-0 opacity-80"
-                        style={{
-                          background: data.course.slug.includes('python') 
-                            ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
-                            : 'linear-gradient(135deg, #14532d 0%, #052e16 100%)'
-                        }}
+                    <div
+                      className="w-full aspect-video bg-[#0a0a0a] border relative overflow-hidden mb-6 group rounded-sm transition-shadow duration-500"
+                      style={{ borderColor: `${visual.accent}33`, boxShadow: `0 0 0 1px ${visual.accent}22` }}
+                    >
+                      <div
+                        className="absolute inset-0 opacity-90 transition-transform duration-700 group-hover:scale-110"
+                        style={{ background: visual.gradient }}
                       />
-                      <img 
-                        src="/zaka-thumb.webp" 
-                        alt="Course" 
-                        className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      <div
+                        className="absolute -inset-8 opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-50"
+                        style={{ background: `radial-gradient(circle at 30% 30%, ${visual.accent}55, transparent 60%)` }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-transparent z-10" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
                       <div className="absolute inset-0 p-6 flex flex-col justify-center z-20 w-[85%]">
-                        <div className="transform -rotate-2 group-hover:scale-105 transition-transform duration-500">
-                          <h4 className="text-[10px] font-mono text-white/70 uppercase tracking-widest mb-1">
-                            {data.course.slug.includes('python') ? 'QA Automation' : 'Master The Craft'}
+                        <div className="transform -rotate-2 group-hover:scale-105 group-hover:-rotate-1 transition-transform duration-500">
+                          <h4
+                            className="text-[10px] font-mono uppercase tracking-widest mb-1 inline-block px-1.5 py-0.5 border rounded-sm"
+                            style={{ color: visual.accent, borderColor: `${visual.accent}55`, background: `${visual.accent}11` }}
+                          >
+                            {visual.badge}
                           </h4>
-                          <h3 className="text-2xl leading-none font-black italic uppercase tracking-tighter drop-shadow-md" style={{ color: data.course.slug.includes('python') ? '#FFD43B' : '#ffffff' }}>
-                            {data.course.slug.includes('python') ? <>LEARN<br/>PYTHON</> : <>SELENIUM<br/><span className="text-[#4ade80]">AUTOMATION</span></>}
+                          <h3 className="text-2xl leading-none font-black italic uppercase tracking-tighter drop-shadow-md text-white mt-1">
+                            {visual.titleLines}
                           </h3>
                         </div>
                       </div>
                     </div>
 
                     <h3 className="text-xl font-eb-garamond mb-4 flex-grow">{data.course.title}</h3>
-                    
+
                     {/* Tags */}
                     <div className="flex gap-2 mb-6">
-                      <span className="text-[10px] font-inter text-white/40 bg-white/5 px-2 py-1 border border-white/5">QA Automation</span>
+                      <span className="text-[10px] font-inter text-white/40 bg-white/5 px-2 py-1 border border-white/5">{visual.badge}</span>
                       <span className="text-[10px] font-inter text-white/40 bg-white/5 px-2 py-1 border border-white/5">
                         {progressPct === 0 ? 'Not Started' : progressPct === 100 ? 'Completed' : 'In Progress'}
                       </span>

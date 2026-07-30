@@ -1,0 +1,255 @@
+{
+  "slug": "appium-mobile-automation",
+  "title": "Appium: Cross-Platform Mobile Test Automation",
+  "description": "Master Appium 2.x for real-world Android and iOS test automation — architecture, locators, gestures, native + hybrid apps, device farms, and CI integration.",
+  "thumbnail_url": "",
+  "modules": [
+    {
+      "title": "Module 1: Mobile Automation Foundations",
+      "lessons": [
+        {
+          "title": "Appium Architecture & the Client-Server Model",
+          "description": "Understand how Appium talks to real devices and simulators/emulators.",
+          "content_markdown": "## How Appium Works\n\nAppium is an HTTP server that implements the **W3C WebDriver protocol**, extended for mobile. Your test code (the client) sends JSON commands over HTTP to the Appium server, which translates them into platform-native automation calls:\n\n- **Android** → UiAutomator2 driver → Android's `UiAutomator` framework\n- **iOS** → XCUITest driver → Apple's `XCTest` framework\n\n```\nTest Code (JS/Java/Python)\n      │  WebDriver protocol (HTTP/JSON)\n      ▼\nAppium Server\n      │  platform-specific driver\n      ▼\nUiAutomator2 (Android) / XCUITest (iOS)\n      │\n      ▼\nReal Device / Emulator / Simulator\n```\n\n### Why this matters\nBecause Appium speaks WebDriver, the same client libraries used for Selenium (WebdriverIO, wdio, Java client) work for mobile with minimal changes — your team's existing WebDriver knowledge transfers almost directly.\n\nAppium 2.x moved to a **driver + plugin architecture**: you install exactly the drivers you need (`appium driver install uiautomator2`), keeping the core lean.",
+          "starter_code": "// Install Appium and the Android driver\n// npm i -g appium\n// appium driver install uiautomator2\n// appium driver install xcuitest\n\n// Start the server\n// appium --port 4723\n",
+          "quiz_data": {
+            "id": "ap-m1-l1-q1",
+            "type": "multiple-choice",
+            "question": "What protocol does Appium use to communicate between your test code and the Appium server?",
+            "options": [
+              "A proprietary binary protocol",
+              "The W3C WebDriver protocol (HTTP/JSON), the same standard Selenium uses",
+              "gRPC exclusively",
+              "Raw ADB shell commands only"
+            ],
+            "correctIndex": 1,
+            "explanation": "Appium extends the same WebDriver protocol used by Selenium, which is why existing WebDriver client libraries and skills transfer directly to mobile automation."
+          },
+          "duration": "9 min"
+        },
+        {
+          "title": "Setting Up the Appium Server & Drivers",
+          "description": "Get a real Android/iOS automation environment running locally.",
+          "content_markdown": "## Environment Setup\n\n### Android\n1. Install Android Studio + SDK, set `ANDROID_HOME`\n2. Create/start an emulator (AVD Manager) or connect a real device with USB debugging enabled\n3. `appium driver install uiautomator2`\n\n### iOS (macOS only)\n1. Install Xcode + Command Line Tools\n2. `appium driver install xcuitest`\n3. Boot a Simulator via `xcrun simctl` or Xcode\n\n### Verify your setup\n```bash\nappium-doctor --android   # checks ANDROID_HOME, JDK, adb, emulator\nappium-doctor --ios       # checks Xcode, xcrun, WebDriverAgent deps\n```\n\n`appium-doctor` catches 90% of setup issues (missing env vars, wrong SDK paths) before you waste time debugging a 'device not found' error that's actually a PATH problem.",
+          "starter_code": "// package.json scripts (recommended)\n{\n  \"scripts\": {\n    \"appium\": \"appium --port 4723\",\n    \"doctor:android\": \"appium-doctor --android\",\n    \"doctor:ios\": \"appium-doctor --ios\"\n  }\n}\n",
+          "duration": "12 min"
+        },
+        {
+          "title": "Appium Inspector & Element Discovery",
+          "description": "Visually explore an app's UI hierarchy to find reliable locators.",
+          "content_markdown": "## Appium Inspector\n\nAppium Inspector is a GUI tool that connects to a running Appium session and shows you the live element tree of your app — the mobile equivalent of browser DevTools.\n\n### Workflow\n1. Start the Appium server\n2. Open Appium Inspector, enter your desired capabilities (app path, platform, device name)\n3. Click **Start Session**\n4. Click any element on the mirrored screen to see its attributes: `resource-id`, `accessibility id`, `class`, `bounds`, etc.\n5. Copy the suggested locator directly into your test code\n\n### What to look for\n- Prefer **accessibility id** (cross-platform, stable, and also benefits real accessibility users) or **resource-id** (Android) over XPath\n- XPath in mobile is even more fragile than in web — full-tree traversal on a mobile UI is slow and brittle; use it only as a last resort",
+          "starter_code": "// Desired Capabilities you'd enter into Appium Inspector (Android example)\n{\n  \"platformName\": \"Android\",\n  \"appium:deviceName\": \"Pixel_7_API_34\",\n  \"appium:automationName\": \"UiAutomator2\",\n  \"appium:app\": \"/path/to/app-debug.apk\"\n}\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "Desired Capabilities vs. the W3C Options Object",
+          "description": "Configure sessions the modern way, with vendor-prefixed capabilities.",
+          "content_markdown": "## From `desiredCapabilities` to W3C `options`\n\nOlder Appium tutorials use a flat `desiredCapabilities` object. Modern Appium (2.x) requires **W3C-compliant capabilities**, which vendor-prefix anything non-standard with `appium:`.\n\n```js\nconst capabilities = {\n  platformName: 'Android',\n  'appium:automationName': 'UiAutomator2',\n  'appium:deviceName': 'Pixel_7_API_34',\n  'appium:app': '/path/to/app-debug.apk',\n  'appium:autoGrantPermissions': true,\n  'appium:newCommandTimeout': 240,\n};\n```\n\nWith WebdriverIO, these are grouped under `capabilities` in `wdio.conf.js`:\n```js\nexports.config = {\n  hostname: 'localhost',\n  port: 4723,\n  path: '/',\n  capabilities: [{\n    platformName: 'Android',\n    'appium:automationName': 'UiAutomator2',\n    'appium:deviceName': 'Pixel_7_API_34',\n    'appium:app': './app/app-debug.apk',\n  }],\n};\n```",
+          "starter_code": "exports.config = {\n  hostname: 'localhost',\n  port: 4723,\n  path: '/',\n  capabilities: [{\n    platformName: 'Android',\n    'appium:automationName': 'UiAutomator2',\n    'appium:deviceName': 'Pixel_7_API_34',\n    'appium:app': './app/app-debug.apk',\n    'appium:autoGrantPermissions': true,\n  }],\n};\n",
+          "quiz_data": {
+            "id": "ap-m1-l4-q1",
+            "type": "multiple-choice",
+            "question": "Why must non-standard capabilities like 'deviceName' be prefixed with 'appium:' in modern Appium?",
+            "options": [
+              "It's just a stylistic convention with no functional purpose",
+              "The W3C WebDriver spec requires vendor-specific extensions to be namespaced to avoid clashing with standard capabilities",
+              "It makes the JSON file load faster",
+              "It is only needed for iOS, never Android"
+            ],
+            "correctIndex": 1,
+            "explanation": "The W3C WebDriver protocol only recognizes a small set of standard capability names; anything else must be vendor-prefixed (appium:) so servers can distinguish standard from extension capabilities."
+          },
+          "duration": "9 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 2: Android Automation with Appium",
+      "lessons": [
+        {
+          "title": "Android Locator Strategies",
+          "description": "Find elements reliably using resource-id, accessibility id, and UiAutomator.",
+          "content_markdown": "## Android-Specific Locators\n\n```js\n// By resource-id (most stable — matches Android's view IDs)\nconst loginBtn = await driver.$('id=com.zaka.app:id/loginButton');\n\n// By accessibility id (cross-platform friendly)\nconst emailField = await driver.$('~emailInput');\n\n// UiAutomator (Android's native selector DSL — powerful for complex matches)\nconst item = await driver.$(\n  'android=new UiSelector().text(\"Wireless Mouse\").className(\"android.widget.TextView\")'\n);\n```\n\n### Priority order\n1. `resource-id` — fastest and most stable, assuming devs don't rename IDs carelessly\n2. `accessibility id` (`~`) — also improves the app's real accessibility, a nice side benefit\n3. `UiSelector` — for complex conditions (partial text, sibling relationships)\n4. XPath — last resort, slow and fragile on deep view hierarchies",
+          "starter_code": "const loginBtn = await driver.$('id=com.zaka.app:id/loginButton');\nawait loginBtn.click();\n\nconst emailField = await driver.$('~emailInput');\nawait emailField.setValue('qa@zaka.dev');\n",
+          "duration": "11 min"
+        },
+        {
+          "title": "Native Gestures: Tap, Swipe, Scroll",
+          "description": "Simulate real touch gestures using the W3C Actions API.",
+          "content_markdown": "## Gestures via W3C Actions\n\nAppium 2.x uses the standard **W3C Actions API** for touch gestures (the old `TouchAction` class is deprecated).\n\n```js\n// Swipe up (e.g., to scroll a feed)\nawait driver.performActions([{\n  type: 'pointer',\n  id: 'finger1',\n  parameters: { pointerType: 'touch' },\n  actions: [\n    { type: 'pointerMove', duration: 0, x: 200, y: 800 },\n    { type: 'pointerDown', button: 0 },\n    { type: 'pointerMove', duration: 300, x: 200, y: 200 },\n    { type: 'pointerUp', button: 0 },\n  ],\n}]);\n```\n\nFor common gestures, most teams wrap this in a helper or use a library like `wdio` plugins that expose `.swipe()`, `.scrollIntoView()` directly — but understanding the raw Actions API matters for custom gestures (pinch-zoom, multi-finger swipe) the helpers don't cover.\n\n### Mobile-specific commands\n```js\nawait driver.execute('mobile: scrollGesture', {\n  elementId: (await driver.$('~feedList')).elementId,\n  direction: 'down',\n  percent: 0.8,\n});\n```",
+          "starter_code": "await driver.performActions([{\n  type: 'pointer',\n  id: 'finger1',\n  parameters: { pointerType: 'touch' },\n  actions: [\n    { type: 'pointerMove', duration: 0, x: 200, y: 800 },\n    { type: 'pointerDown', button: 0 },\n    { type: 'pointerMove', duration: 300, x: 200, y: 200 },\n    { type: 'pointerUp', button: 0 },\n  ],\n}]);\n",
+          "quiz_data": {
+            "id": "ap-m2-l2-q1",
+            "type": "multiple-choice",
+            "question": "What replaced the deprecated TouchAction class for gestures in modern Appium?",
+            "options": [
+              "The W3C Actions API (performActions)",
+              "jQuery-style .swipe() built into WebDriver core",
+              "A dedicated GestureManager class",
+              "Gestures are no longer supported in Appium 2.x"
+            ],
+            "correctIndex": 0,
+            "explanation": "Appium 2.x standardized on the W3C WebDriver Actions API for pointer/touch input, replacing the old vendor-specific TouchAction class."
+          },
+          "duration": "13 min"
+        },
+        {
+          "title": "Android-Specific Commands: Deep Links, Notifications & Permissions",
+          "description": "Use Appium's mobile: extension commands for Android-only capabilities.",
+          "content_markdown": "## `mobile:` Extension Commands\n\nAppium exposes platform-specific power tools via `driver.execute('mobile: <command>', {...})`:\n\n```js\n// Open a deep link directly (skip navigating through the whole app)\nawait driver.execute('mobile: deepLink', {\n  url: 'zakaapp://course/appium-mobile-automation',\n  package: 'com.zaka.app',\n});\n\n// Pull down the notification shade\nawait driver.execute('mobile: openNotifications');\n\n// Grant a runtime permission without a UI dialog\nawait driver.execute('mobile: changePermissions', {\n  permissions: ['android.permission.CAMERA'],\n  action: 'grant',\n});\n```\n\nDeep links are especially valuable for test speed: instead of navigating five screens deep to test a feature, jump straight there and keep your test focused on the behavior you actually care about.",
+          "starter_code": "await driver.execute('mobile: deepLink', {\n  url: 'zakaapp://course/appium-mobile-automation',\n  package: 'com.zaka.app',\n});\n",
+          "duration": "10 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 3: iOS Automation with Appium",
+      "lessons": [
+        {
+          "title": "XCUITest Driver Setup & WebDriverAgent",
+          "description": "Understand the moving pieces behind iOS automation.",
+          "content_markdown": "## How iOS Automation Works\n\nThe XCUITest driver installs and runs **WebDriverAgent (WDA)** — a small XCTest-based server — on the simulator/device. Appium talks to WDA, which drives the app via Apple's native `XCTest` framework.\n\n### First-run cost\nThe very first session on a real device requires Xcode to build and codesign WDA, which can take 1-3 minutes. Subsequent runs reuse the installed WDA and start much faster — this is why iOS test suites often 'warm up' the first test intentionally in CI.\n\n### Real device vs. Simulator\n- **Simulator**: fast, free, no code signing hassle, but can't test camera/biometrics/push notifications realistically\n- **Real device**: required for true performance, biometrics (Face ID/Touch ID simulation still works via simctl for Simulator, but real hardware sensors need real devices), and final release validation",
+          "starter_code": "{\n  \"platformName\": \"iOS\",\n  \"appium:automationName\": \"XCUITest\",\n  \"appium:deviceName\": \"iPhone 15\",\n  \"appium:platformVersion\": \"17.4\",\n  \"appium:app\": \"/path/to/MyApp.app\",\n  \"appium:wdaLaunchTimeout\": 120000\n}\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "iOS Locator Strategies",
+          "description": "Master accessibility id, predicate strings, and class chain queries.",
+          "content_markdown": "## iOS-Specific Locators\n\n```js\n// Accessibility id — the #1 recommended strategy on iOS\nconst loginBtn = await driver.$('~loginButton');\n\n// NSPredicate string — powerful attribute-based matching\nconst item = await driver.$(\n  '-ios predicate string:type == \"XCUIElementTypeStaticText\" AND label == \"Wireless Mouse\"'\n);\n\n// Class chain — faster alternative to XPath for hierarchical queries\nconst cell = await driver.$(\n  '-ios class chain:**/XCUIElementTypeCell[`label == \"Wireless Mouse\"`]'\n);\n```\n\n### Why predicate/class chain over XPath\nBoth are evaluated natively by XCTest (fast), whereas XPath requires Appium to build a full accessibility tree snapshot first — noticeably slower on complex screens. Reserve XPath for cases predicate strings genuinely can't express.",
+          "starter_code": "const loginBtn = await driver.$('~loginButton');\nawait loginBtn.click();\n\nconst item = await driver.$(\n  '-ios predicate string:type == \"XCUIElementTypeStaticText\" AND label == \"Wireless Mouse\"'\n);\n",
+          "quiz_data": {
+            "id": "ap-m3-l2-q1",
+            "type": "multiple-choice",
+            "question": "Why are NSPredicate strings and class chains generally faster than XPath on iOS?",
+            "options": [
+              "They are evaluated natively by XCTest instead of requiring a full accessibility tree snapshot",
+              "They only work on the Simulator, which is inherently faster",
+              "XPath is disabled by default in XCUITest",
+              "There is no actual performance difference"
+            ],
+            "correctIndex": 0,
+            "explanation": "Predicate strings and class chains are resolved directly by XCTest's native query engine, while XPath requires Appium to build and traverse a full tree snapshot, which is slower."
+          },
+          "duration": "11 min"
+        },
+        {
+          "title": "iOS Gestures: Simulators vs. Real Devices",
+          "description": "Handle platform quirks in gesture automation and permission dialogs.",
+          "content_markdown": "## Gestures on iOS\n\nThe same W3C Actions API works across platforms, but iOS has its own quirks:\n\n```js\n// Swipe using mobile: extension (recommended over raw Actions on iOS)\nawait driver.execute('mobile: swipe', { direction: 'up' });\n\n// Handle system permission alerts (Face ID, camera, notifications)\nawait driver.execute('mobile: alert', { action: 'accept' });\n```\n\n### Simulator-only limitations\n- Push notifications require `xcrun simctl push` to simulate, not real APNs delivery\n- Face ID/Touch ID: use `xcrun simctl` to 'enroll' and 'match'/'no match' a simulated biometric in the Simulator; behaves differently than a real fingerprint sensor\n- Location simulation: `driver.execute('mobile: setSimulatedLocation', {...})` works great on Simulator, more restricted on real devices\n\nAlways validate biometric- and push-heavy flows on **real devices** before shipping — Simulator behavior is a reasonable proxy, not a guarantee.",
+          "starter_code": "await driver.execute('mobile: swipe', { direction: 'up' });\nawait driver.execute('mobile: alert', { action: 'accept' });\n",
+          "duration": "10 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 4: Cross-Platform Strategy",
+      "lessons": [
+        {
+          "title": "Writing Cross-Platform Tests with a Platform Abstraction",
+          "description": "Share one test suite across Android and iOS with minimal duplication.",
+          "content_markdown": "## The Screen Object + Platform Map Pattern\n\nInstead of two entirely separate test suites, wrap platform differences behind a single interface:\n\n```js\nclass LoginScreen {\n  constructor(driver) {\n    this.driver = driver;\n    this.isAndroid = driver.capabilities.platformName === 'Android';\n  }\n\n  get emailField() {\n    return this.isAndroid\n      ? this.driver.$('id=com.zaka.app:id/emailInput')\n      : this.driver.$('~emailInput');\n  }\n\n  get loginButton() {\n    return this.isAndroid\n      ? this.driver.$('id=com.zaka.app:id/loginButton')\n      : this.driver.$('~loginButton');\n  }\n\n  async login(email, password) {\n    await (await this.emailField).setValue(email);\n    await (await this.driver.$('~passwordInput')).setValue(password);\n    await (await this.loginButton).click();\n  }\n}\n```\n\nThe test itself never mentions 'Android' or 'iOS' — it just calls `loginScreen.login(...)`, and the same test file runs against both platforms in CI by swapping capabilities.",
+          "starter_code": "class LoginScreen {\n  constructor(driver) {\n    this.driver = driver;\n    this.isAndroid = driver.capabilities.platformName === 'Android';\n  }\n\n  async login(email, password) {\n    const emailField = this.isAndroid\n      ? await this.driver.$('id=com.zaka.app:id/emailInput')\n      : await this.driver.$('~emailInput');\n    await emailField.setValue(email);\n\n    const loginButton = this.isAndroid\n      ? await this.driver.$('id=com.zaka.app:id/loginButton')\n      : await this.driver.$('~loginButton');\n    await loginButton.click();\n  }\n}\n",
+          "duration": "14 min"
+        },
+        {
+          "title": "Hybrid Apps & WebViews",
+          "description": "Switch contexts to automate embedded web content inside a native app.",
+          "content_markdown": "## Native vs. WebView Context\n\nMany apps embed web content (a checkout flow, help center, etc.) inside a `WebView`. Appium requires you to explicitly switch context to interact with it.\n\n```js\nconst contexts = await driver.getContexts();\n// e.g. ['NATIVE_APP', 'WEBVIEW_com.zaka.app']\n\nawait driver.switchContext('WEBVIEW_com.zaka.app');\n// Now standard web locators (CSS) work:\nconst el = await driver.$('#checkout-button');\nawait el.click();\n\nawait driver.switchContext('NATIVE_APP'); // switch back for native elements\n```\n\n### Common gotchas\n- The WebView context only appears **after** the WebView has actually loaded content — poll `getContexts()` if you switch too early\n- Android WebViews require the app to have `WebView.setWebContentsDebuggingEnabled(true)` in debug builds, or Appium can't attach to them via Chromedriver",
+          "starter_code": "const contexts = await driver.getContexts();\nconsole.log(contexts); // ['NATIVE_APP', 'WEBVIEW_com.zaka.app']\n\nawait driver.switchContext('WEBVIEW_com.zaka.app');\nconst checkoutBtn = await driver.$('#checkout-button');\nawait checkoutBtn.click();\n\nawait driver.switchContext('NATIVE_APP');\n",
+          "quiz_data": {
+            "id": "ap-m4-l2-q1",
+            "type": "multiple-choice",
+            "question": "Why might driver.getContexts() not immediately show the WEBVIEW context after navigating to a screen with embedded web content?",
+            "options": [
+              "WebViews are never automatable with Appium",
+              "The context only appears once the WebView has actually finished loading content, so timing/polling matters",
+              "You must restart the Appium server first",
+              "WebView contexts only exist on iOS"
+            ],
+            "correctIndex": 1,
+            "explanation": "The WEBVIEW_* context is registered once the underlying WebView has loaded and (on Android) debugging is enabled — switching too early will show only NATIVE_APP."
+          },
+          "duration": "12 min"
+        },
+        {
+          "title": "Handling Permissions & System Alerts",
+          "description": "Automate the interruptions real devices constantly throw at you.",
+          "content_markdown": "## Permission Dialogs\n\nSystem permission prompts (location, camera, notifications) aren't part of your app's own UI, so ordinary locators can't reliably find them across OS versions.\n\n### Android\n```js\n// Best: auto-grant at session start (skips the dialog entirely)\n'appium:autoGrantPermissions': true\n\n// Or handle it explicitly mid-test if it appears\nawait driver.execute('mobile: changePermissions', {\n  permissions: ['android.permission.ACCESS_FINE_LOCATION'],\n  action: 'grant',\n});\n```\n\n### iOS\n```js\nawait driver.execute('mobile: alert', { action: 'accept' }); // Allow\nawait driver.execute('mobile: alert', { action: 'dismiss' }); // Don't Allow\n```\n\n### Best practice\nWhenever possible, **grant permissions at session setup** rather than clicking through dialogs mid-test — this removes an entire category of OS-version-dependent flakiness from your suite.",
+          "starter_code": "// Android: grant all needed permissions up front\nconst capabilities = {\n  platformName: 'Android',\n  'appium:automationName': 'UiAutomator2',\n  'appium:app': './app/app-debug.apk',\n  'appium:autoGrantPermissions': true,\n};\n\n// iOS: handle an unexpected system alert mid-test\ntry {\n  await driver.execute('mobile: alert', { action: 'accept' });\n} catch (e) {\n  // no alert present, continue\n}\n",
+          "duration": "10 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 5: Scaling & CI",
+      "lessons": [
+        {
+          "title": "Parallel Testing with Device Farms",
+          "description": "Scale beyond your local emulator using cloud device grids.",
+          "content_markdown": "## Why Cloud Device Farms\n\nRunning against one local emulator doesn't scale, and real device coverage (dozens of OS/screen combos) is impractical to own physically. Services like **BrowserStack App Automate**, **Sauce Labs**, and **LambdaTest** host real devices and expose the same WebDriver-compatible Appium endpoint.\n\n```js\n// wdio.conf.js — pointing at BrowserStack instead of localhost\nexports.config = {\n  user: process.env.BROWSERSTACK_USERNAME,\n  key: process.env.BROWSERSTACK_ACCESS_KEY,\n  hostname: 'hub.browserstack.com',\n  capabilities: [{\n    platformName: 'Android',\n    'appium:app': 'bs://<uploaded-app-id>',\n    'bstack:options': {\n      deviceName: 'Samsung Galaxy S23',\n      osVersion: '13.0',\n    },\n  }],\n};\n```\n\nYour test code doesn't change at all — only the connection config. This is one of Appium's biggest strengths: the same suite runs locally, in CI, and against real cloud devices unmodified.",
+          "starter_code": "exports.config = {\n  user: process.env.BROWSERSTACK_USERNAME,\n  key: process.env.BROWSERSTACK_ACCESS_KEY,\n  hostname: 'hub.browserstack.com',\n  capabilities: [{\n    platformName: 'Android',\n    'appium:app': 'bs://<uploaded-app-id>',\n    'bstack:options': { deviceName: 'Samsung Galaxy S23', osVersion: '13.0' },\n  }],\n};\n",
+          "duration": "11 min"
+        },
+        {
+          "title": "Appium in CI/CD Pipelines",
+          "description": "Automate emulator boot, app build, and test execution end-to-end.",
+          "content_markdown": "## A Real CI Pipeline (GitHub Actions + Android Emulator)\n\n```yaml\nname: Mobile E2E\non: [push]\njobs:\n  android-test:\n    runs-on: macos-latest  # macOS runners have HW acceleration for emulators\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci\n      - run: npm i -g appium && appium driver install uiautomator2\n      - name: Start emulator and run tests\n        uses: reactivecircus/android-emulator-runner@v2\n        with:\n          api-level: 34\n          script: |\n            appium --port 4723 &\n            npx wait-on tcp:4723\n            npm run test:android\n```\n\n### For cloud device farms\nSkip the emulator step entirely — just export your `BROWSERSTACK_*` credentials as CI secrets and run your suite directly, since there's no local device to boot.",
+          "starter_code": "name: Mobile E2E\non: [push]\njobs:\n  android-test:\n    runs-on: macos-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm i -g appium && appium driver install uiautomator2\n      - run: appium --port 4723 &\n      - run: npm run test:android\n",
+          "quiz_data": {
+            "id": "ap-m5-l2-q1",
+            "type": "multiple-choice",
+            "question": "Why do Android emulator CI jobs commonly run on macOS or Linux runners with nested virtualization, rather than plain Linux containers?",
+            "options": [
+              "Android emulators require hardware-accelerated virtualization (KVM/HAXM) which containers typically lack",
+              "Appium only supports macOS",
+              "GitHub Actions blocks Android tooling on Linux",
+              "It's purely a licensing requirement, not technical"
+            ],
+            "correctIndex": 0,
+            "explanation": "The Android emulator needs HW-accelerated virtualization to run at usable speed; standard CI containers often lack this, so runners with nested virtualization or macOS's Hypervisor framework are used instead."
+          },
+          "duration": "12 min"
+        },
+        {
+          "title": "Debugging Flaky Mobile Tests",
+          "description": "Diagnose the most common sources of instability in mobile automation.",
+          "content_markdown": "## Why Mobile Tests Flake More Than Web\n\nMobile introduces failure modes web automation doesn't have:\n\n- **Animation timing**: Android/iOS transition animations can make an element 'visible' but not yet stable — add explicit waits for animation-end states, not just presence\n- **Keyboard overlays**: a software keyboard covering a submit button is a top cause of 'element not clickable' — dismiss it explicitly (`driver.hideKeyboard()`) before acting\n- **Cold start variance**: first app launch after install is slower and less predictable than subsequent launches — don't assume launch timing is constant across CI runs\n- **Session/driver reuse**: reusing one driver session across many tests without resetting app state causes cross-test contamination — prefer `resetApp` or reinstalling per test file for true isolation\n\n### A practical debugging checklist\n1. Capture a screenshot (`driver.saveScreenshot()`) on every failure\n2. Log the current context and page source (`driver.getPageSource()`) on failure\n3. Re-run failed tests with video/session recording enabled (most cloud farms support this out of the box)",
+          "starter_code": "afterEach(async function () {\n  if (this.currentTest.state === 'failed') {\n    await driver.saveScreenshot(`./failures/${this.currentTest.title}.png`);\n    const source = await driver.getPageSource();\n    console.log(source);\n  }\n});\n",
+          "duration": "13 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 6: Capstone Project",
+      "lessons": [
+        {
+          "title": "Capstone: End-to-End Suite for a Banking App Demo",
+          "description": "Apply every concept to a realistic, high-stakes mobile app scenario.",
+          "content_markdown": "## Capstone Brief\n\nBuild a cross-platform Appium suite for a demo banking app covering:\n\n1. **Biometric login simulation** (Face ID/Touch ID stub on Simulator, PIN fallback on both platforms)\n2. **Cross-platform screen objects** — one test file, both Android and iOS capabilities\n3. **Deep-link based test setup** — jump straight to the 'Transfer Funds' screen instead of navigating through the full app\n4. **WebView handling** — the 'Statements' section is a hybrid WebView; switch context to verify a PDF download link renders\n5. **CI** — run against both an Android emulator and a cloud iOS device (BrowserStack), triggered on every PR\n\n```js\ndescribe('Transfer funds flow', () => {\n  it('completes a transfer between accounts', async () => {\n    await driver.execute('mobile: deepLink', {\n      url: 'zakabank://transfer',\n      package: 'com.zaka.bank',\n    });\n\n    const screen = new TransferScreen(driver);\n    await screen.selectFromAccount('Checking');\n    await screen.selectToAccount('Savings');\n    await screen.enterAmount('250.00');\n    await screen.confirm();\n\n    await expect(await screen.successBanner.getText()).toContain('Transfer complete');\n  });\n});\n```\n\nThis capstone mirrors what a real fintech QA team builds: cross-platform coverage, fast setup via deep links, hybrid content handling, and CI-driven execution across real device coverage.",
+          "starter_code": "describe('Transfer funds flow', () => {\n  it('completes a transfer between accounts', async () => {\n    await driver.execute('mobile: deepLink', {\n      url: 'zakabank://transfer',\n      package: 'com.zaka.bank',\n    });\n\n    const fromAccount = await driver.$('~fromAccountDropdown');\n    await fromAccount.click();\n    const checking = await driver.$('~option-Checking');\n    await checking.click();\n\n    const amountField = await driver.$('~amountInput');\n    await amountField.setValue('250.00');\n\n    const confirmBtn = await driver.$('~confirmTransferButton');\n    await confirmBtn.click();\n\n    const banner = await driver.$('~successBanner');\n    await banner.waitForDisplayed({ timeout: 5000 });\n  });\n});\n",
+          "duration": "28 min"
+        },
+        {
+          "title": "Capstone Knowledge Check",
+          "description": "Final assessment covering the full course.",
+          "content_markdown": "## Final Review\n\nMake sure you can confidently explain:\n\n- Why Appium's client-server model lets your existing WebDriver skills transfer to mobile\n- The locator priority order on Android (resource-id/accessibility id) vs. iOS (accessibility id/predicate string)\n- Why cold starts, keyboard overlays, and animation timing cause mobile-specific flakiness\n- How the platform-abstraction (Screen Object) pattern lets one suite target both Android and iOS\n- Why cloud device farms let the same test code run locally and against real hardware unmodified\n\nIf these all feel solid, you're ready to design and own a real mobile QA automation strategy end-to-end.",
+          "starter_code": "// Reflection exercise — no code required.\n// Sketch out the Screen Object structure you'd use for an app you know well,\n// covering at least one native screen and one WebView-based screen.\n",
+          "quiz_data": {
+            "id": "ap-m6-l2-q1",
+            "type": "multiple-choice",
+            "question": "What is the primary reason deep links are valuable in mobile test setup?",
+            "options": [
+              "They bypass all app security entirely",
+              "They let a test jump straight to the screen under test instead of navigating through the full app, saving time and reducing unrelated failure points",
+              "They are required for Appium to launch the app at all",
+              "They only work on iOS"
+            ],
+            "correctIndex": 1,
+            "explanation": "Deep links let tests target the specific screen/feature under test directly, keeping tests focused and fast instead of re-navigating the same multi-screen path every time."
+          },
+          "duration": "10 min"
+        }
+      ]
+    }
+  ]
+}
