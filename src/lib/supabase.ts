@@ -477,7 +477,7 @@ export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
   // Fetch all courses
   const { data: courses } = await supabase
     .from('courses')
-    .select('id, title');
+    .select('id, title, is_published');
 
   // Fetch all lessons with module→course join
   const { data: lessons } = await supabase
@@ -507,11 +507,33 @@ export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
     if (cid) totalLessonsPerCourse[cid] = (totalLessonsPerCourse[cid] || 0) + 1;
   });
 
+  const publishedCourses = safeCourses.filter((c: any) => c.is_published);
+
   return profiles.map((profile: Profile) => {
     const userEnrollments = safeEnrollments.filter((e: any) => e.user_id === profile.id);
     const userProgress = safeProgress.filter((p: any) => p.user_id === profile.id && p.completed);
 
-    const courseProgress: StudentCourseProgress[] = userEnrollments.map((e: any) => {
+    // Lifetime/monthly members get access to every published course automatically
+    // (same rule getEnrollments() applies for the student's own Dashboard), so their
+    // course list here must include courses added *after* they subscribed, not just
+    // literal enrollment rows written at signup/webhook time.
+    const isPaidMember = profile.plan === 'lifetime' || profile.plan === 'monthly';
+    const effectiveCourses: { course_id: string; plan: string; enrolled_at: string }[] = isPaidMember
+      ? publishedCourses.map((c: any) => {
+          const existing = userEnrollments.find((e: any) => e.course_id === c.id);
+          return {
+            course_id: c.id,
+            plan: profile.plan,
+            enrolled_at: existing?.enrolled_at || profile.created_at,
+          };
+        })
+      : userEnrollments.map((e: any) => ({
+          course_id: e.course_id,
+          plan: e.plan,
+          enrolled_at: e.enrolled_at,
+        }));
+
+    const courseProgress: StudentCourseProgress[] = effectiveCourses.map((e) => {
       const course = safeCourses.find((c: any) => c.id === e.course_id);
       const completedLessons = userProgress.filter(
         (p: any) => lessonCourseMap[p.lesson_id] === e.course_id
@@ -526,11 +548,7 @@ export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
 
     return {
       ...profile,
-      enrollments: userEnrollments.map((e: any) => ({
-        course_id: e.course_id,
-        plan: e.plan,
-        enrolled_at: e.enrolled_at,
-      })),
+      enrollments: effectiveCourses,
       courseProgress,
     };
   });
