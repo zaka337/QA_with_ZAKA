@@ -256,7 +256,7 @@ export default function Dashboard() {
           return (
             <section className="dashboard-item mb-16">
               <h2 className="text-2xl font-eb-garamond mb-6">Continue Learning</h2>
-              <div className="flex overflow-x-auto pb-8 gap-6 snap-x hide-scrollbar">
+              <div className="flex overflow-x-auto pb-8 gap-6 snap-x snap-mandatory hide-scrollbar -mx-6 px-6 lg:-mx-8 lg:px-8 scroll-pl-6 lg:scroll-pl-8">
                 {inProgressCourses.map((data, index) => {
                   const completedCount = data.progress.filter(p => p.completed).length;
                   const progressPct = data.totalLessons > 0 ? Math.round((completedCount / data.totalLessons) * 100) : 0;
