@@ -391,24 +391,25 @@ export default function CoursePlayer() {
         className={`
           ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
           fixed right-0 top-0 bottom-0 md:relative md:translate-x-0
-          w-[80vw] max-w-sm md:w-80 h-full bg-[#0a0a0a] border-l border-white/10 flex flex-col transition-transform duration-500 z-30
+          w-[85vw] max-w-xs sm:max-w-sm md:w-80 md:max-w-[320px] h-full bg-[#0a0a0a] border-l border-white/10
+          flex flex-col flex-shrink-0 overflow-hidden transition-transform duration-500 z-30
         `}
       >
-        <div className="p-6 border-b border-white/10 flex justify-between items-center h-16">
-          <h2 className="font-eb-garamond text-xl">Syllabus</h2>
+        <div className="p-4 sm:p-6 border-b border-white/10 flex justify-between items-center h-14 sm:h-16 shrink-0">
+          <h2 className="font-eb-garamond text-lg sm:text-xl truncate">Syllabus</h2>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-white/50 hover:text-white"
+            className="md:hidden text-white/50 hover:text-white shrink-0 ml-2"
           >
             &times;
           </button>
         </div>
 
-        <ScrollArea.Root className="flex-1 overflow-hidden">
-          <ScrollArea.Viewport className="w-full h-full p-4">
+        <ScrollArea.Root className="flex-1 overflow-hidden min-h-0">
+          <ScrollArea.Viewport className="w-full h-full p-3 sm:p-4">
             {curriculum.map((module) => (
-              <div key={module.id} className="mb-8">
-                <h3 className="text-xs font-geist text-white/50 uppercase tracking-widest mb-4 px-2">
+              <div key={module.id} className="mb-6 sm:mb-8 min-w-0">
+                <h3 className="text-[10px] sm:text-xs font-geist text-white/50 uppercase tracking-widest mb-3 sm:mb-4 px-2 break-words">
                   {module.title}
                 </h3>
                 <div className="space-y-1">
@@ -420,7 +421,7 @@ export default function CoursePlayer() {
                         key={lesson.id}
                         onClick={() => setActiveLesson(lesson)}
                         className={`
-                          w-full p-3 flex gap-3 cursor-pointer transition-colors group text-left
+                          w-full max-w-full p-2.5 sm:p-3 flex gap-2.5 sm:gap-3 cursor-pointer transition-colors group text-left overflow-hidden
                           ${active ? 'bg-white/10' : 'hover:bg-white/5'}
                         `}
                         style={{ background: active ? 'rgba(255,255,255,0.08)' : undefined, border: 'none' }}
@@ -438,8 +439,8 @@ export default function CoursePlayer() {
                             <div className="w-4 h-4 rounded-full border border-white/20 group-hover:border-white/50 transition-colors" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-light truncate ${active ? 'text-white' : done ? 'text-white/50 line-through' : 'text-white/70 group-hover:text-white'} transition-colors`}>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className={`text-xs sm:text-sm font-light break-words ${active ? 'text-white' : done ? 'text-white/50 line-through' : 'text-white/70 group-hover:text-white'} transition-colors`}>
                             {lesson.title}
                           </div>
                         </div>
