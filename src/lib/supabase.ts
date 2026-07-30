@@ -317,7 +317,7 @@ export async function getRealAdminStats() {
     { data: lessons },
     { data: progress }
   ] = await Promise.all([
-    supabase.from('profiles').select('id'),
+    supabase.from('profiles').select('id, created_at'),
     supabase.from('enrollments').select('user_id, course_id'),
     supabase.from('courses').select('id, title, price'),
     supabase.from('modules').select('id, title, course_id'),
@@ -344,20 +344,32 @@ export async function getRealAdminStats() {
   let newStudentsWeek = 0;
   let newStudentsMonth = 0;
 
-  // Growth data: Group by Month (e.g., 'Jan', 'Feb')
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Growth data: Group by Month (e.g., 'Jan', 'Feb'), last 6 months
   const growthMap: Record<string, number> = {};
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  safeProfiles.forEach(() => {
-    newStudentsToday++;
-    newStudentsWeek++;
-    newStudentsMonth++;
-    const m = monthNames[now.getMonth()];
-    growthMap[m] = (growthMap[m] || 0) + 1;
+  const monthOrder: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = monthNames[d.getMonth()];
+    monthOrder.push(label);
+    growthMap[label] = 0;
+  }
+
+  safeProfiles.forEach((p: any) => {
+    const createdAt = p.created_at ? new Date(p.created_at) : null;
+    if (createdAt) {
+      if (createdAt >= today) newStudentsToday++;
+      if (createdAt >= thisWeek) newStudentsWeek++;
+      if (createdAt >= thisMonth) newStudentsMonth++;
+
+      const m = monthNames[createdAt.getMonth()];
+      if (m in growthMap) growthMap[m] += 1;
+    }
   });
 
-  const studentGrowth = Object.keys(growthMap).map(k => ({ name: k, students: growthMap[k] }));
-  if (studentGrowth.length === 0) studentGrowth.push({ name: monthNames[now.getMonth()], students: 0 }); // Fallback
+  const studentGrowth = monthOrder.map(k => ({ name: k, students: growthMap[k] }));
 
   // --- Enrollment & Revenue ---
   const activeEnrollments = safeEnrollments.length;
