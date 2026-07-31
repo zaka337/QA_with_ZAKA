@@ -3,24 +3,6 @@ import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import gsap from 'gsap';
 import ReactMarkdown from 'react-markdown';
 
-const SYSTEM_PROMPT = `You are the official AI Assistant for the 'QA with Zaka' Learning Platform. 
-Your tone should be helpful, professional, and encouraging. 
-
-You possess deep knowledge of the website's functionality and must guide users accurately. Here is the platform map and features:
-1. **Homepage (/)**: The main landing page showcasing our Cinematic Vision, Curriculum, and Alumni Archives.
-2. **Pricing (/pricing)**: We offer two main plans. A Lifetime plan for $199, and a Monthly subscription for $49.
-3. **Authentication (/login, /signup)**: Where users create accounts or log in. Also includes /forgot-password.
-4. **Student Dashboard (/dashboard)**: The main hub for enrolled students. It displays their active courses with real-time progress bars and custom YouTube-style thumbnails.
-5. **Course Player (/course/:courseId)**: An immersive, distraction-free "Cinema Mode" video player where students actually take the lessons.
-6. **Settings (/settings)**: Where users can update their profile information and password.
-7. **Admin Dashboard (/admin)**: A restricted area where platform admins can manage students, enrollments, and import new courses.
-
-**Courses Available**:
-- "Python for QA Testers": Master automated testing with Python.
-- "Software Engineering: Selenium Automation": The complete guide to Selenium.
-
-If a user asks how to find something, give them precise instructions based on this map. Keep responses concise and easy to read.`;
-
 type Message = {
   role: 'user' | 'model';
   content: string;
@@ -74,78 +56,37 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
-      // 1. Try backend Supabase Edge Function first (recommended for production - keeps API key hidden on server)
+      // Route through the Supabase Edge Function — it keeps the OpenAI key on the
+      // server. Never call OpenAI directly from client code: any key referenced here
+      // would ship inside the public JS bundle for anyone to extract.
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const openAiKey = (import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY || (import.meta as any).env?.OPENAI_API_KEY) as string | undefined;
 
-      let responseText = '';
-
-      if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'https://placeholder.supabase.co') {
-        try {
-          const edgeRes = await fetch(`${supabaseUrl}/functions/v1/chat`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseAnonKey}`,
-            },
-            body: JSON.stringify({
-              message: userMessage,
-              history: messages.slice(1).map(msg => ({
-                role: msg.role === 'model' ? 'assistant' : 'user',
-                content: msg.content,
-              })),
-            }),
-          });
-
-          const edgeData = await edgeRes.json().catch(() => ({}));
-          if (edgeRes.ok && edgeData.reply) {
-            responseText = edgeData.reply;
-          } else if (edgeData.error) {
-            console.warn('Edge function returned error:', edgeData.error);
-          }
-        } catch {
-          // If Edge function fails or isn't deployed yet, fall through to direct API call
-        }
+      if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://placeholder.supabase.co') {
+        throw new Error('Chat backend is not configured.');
       }
 
-      // 2. Direct OpenAI API call (if Edge function didn't handle it and client API key exists)
-      if (!responseText) {
-        if (!openAiKey || openAiKey === 'your_openai_api_key_here') {
-          throw new Error('OpenAI API key is missing. Please set VITE_OPENAI_API_KEY in .env or configure OPENAI_API_KEY in Supabase Edge Functions.');
-        }
+      const edgeRes = await fetch(`${supabaseUrl}/functions/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          history: messages.slice(1).map(msg => ({
+            role: msg.role === 'model' ? 'assistant' : 'user',
+            content: msg.content,
+          })),
+        }),
+      });
 
-        const formattedHistory = messages.slice(1).map(msg => ({
-          role: msg.role === 'model' ? 'assistant' : 'user',
-          content: msg.content,
-        }));
-
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openAiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              ...formattedHistory,
-              { role: 'user', content: userMessage },
-            ],
-          }),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error?.message || `OpenAI API request failed with status ${res.status}`);
-        }
-
-        const data = await res.json();
-        responseText = data.choices?.[0]?.message?.content ?? '';
+      const edgeData = await edgeRes.json().catch(() => ({}));
+      if (!edgeRes.ok || !edgeData.reply) {
+        throw new Error(edgeData.error || 'The assistant is temporarily unavailable.');
       }
 
-      setMessages(prev => [...prev, { role: 'model', content: responseText }]);
+      setMessages(prev => [...prev, { role: 'model', content: edgeData.reply }]);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Chat Error:', error);
