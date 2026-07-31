@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { Button } from '../components/Button';
+import { AnimatedHero } from '../components/ui/animated-hero';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
@@ -72,11 +73,12 @@ export default function Pricing() {
     <div ref={containerRef} className="pt-32 pb-24 min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
 
-        <div className="pricing-header text-center max-w-3xl mx-auto mb-20">
-          <h1 className="text-4xl md:text-6xl font-eb-garamond mb-6">Master the Craft</h1>
-          <p className="text-white/60 font-inter text-lg font-light leading-relaxed">
-            Gain full access to the complete roadmap, premium video courses, and an exclusive alumni community.
-          </p>
+        <div className="pricing-header mb-20">
+          <AnimatedHero
+            prefix="Master the"
+            words={["Craft", "Toolchain", "Automation", "Career"]}
+            description="Gain full access to the complete roadmap, premium video courses, and an exclusive alumni community."
+          />
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
