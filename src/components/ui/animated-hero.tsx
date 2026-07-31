@@ -20,6 +20,14 @@ function AnimatedHero({
   const [activeIndex, setActiveIndex] = useState(0);
   const stableWords = useMemo(() => words, [words]);
 
+  // Size the rotating slot to the longest word so nothing clips horizontally,
+  // with generous vertical room for ascenders/descenders (EB Garamond has tall
+  // caps and deep descenders, so a tight 1-line-height box crops real glyphs).
+  const longestWordLength = useMemo(
+    () => Math.max(...stableWords.map((w) => w.length), 1),
+    [stableWords]
+  );
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setActiveIndex((prev) => (prev === stableWords.length - 1 ? 0 : prev + 1));
@@ -29,13 +37,16 @@ function AnimatedHero({
 
   return (
     <div className={`flex flex-col items-center text-center max-w-3xl mx-auto ${className}`}>
-      <h1 className="font-eb-garamond text-4xl md:text-6xl tracking-tight text-white">
-        <span>{prefix} </span>
-        <span className="relative inline-flex h-[1.15em] w-[1em] min-w-[7ch] justify-center overflow-hidden align-bottom md:min-w-[6ch]">
+      <h1 className="font-eb-garamond text-4xl md:text-6xl tracking-tight text-white flex flex-wrap items-center justify-center gap-x-3">
+        <span>{prefix}</span>
+        <span
+          className="relative inline-flex items-center justify-center overflow-hidden"
+          style={{ height: "1.5em", minWidth: `${longestWordLength + 1}ch` }}
+        >
           {stableWords.map((word, index) => (
             <motion.span
               key={word}
-              className="absolute font-semibold text-[#C9A96E]"
+              className="absolute font-semibold text-[#C9A96E] whitespace-nowrap"
               initial={{ opacity: 0, y: -40 }}
               transition={{ type: "spring", stiffness: 60, damping: 14 }}
               animate={
