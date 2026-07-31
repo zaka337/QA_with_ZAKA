@@ -7,9 +7,6 @@ import { inspectAttr } from 'plugin-inspect-react-code'
 export default defineConfig({
   base: '/',
   plugins: [inspectAttr(), react()],
-  define: {
-    'import.meta.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || ''),
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
