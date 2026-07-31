@@ -79,6 +79,38 @@
     font-family: 'EB Garamond', serif;
     font-weight: 400;
   }
+
+  @property --shine-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+  }
+}
+
+@layer components {
+  /* Rotating chrome-bezel border: a conic gradient "ring" that sits behind the
+     content and is revealed only at the edges via padding, animated by
+     rotating the gradient's start angle. Progressive enhancement — browsers
+     without @property support just render a static (non-rotating) bezel. */
+  .shine-border {
+    position: relative;
+    border-radius: inherit;
+    background: conic-gradient(
+      from var(--shine-angle),
+      rgba(255, 255, 255, 0.9),
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0.05) 75%,
+      rgba(255, 255, 255, 0.9)
+    );
+    animation: shine-rotate 4s linear infinite;
+  }
+
+  @keyframes shine-rotate {
+    to {
+      --shine-angle: 360deg;
+    }
+  }
 }
 
 @layer components {

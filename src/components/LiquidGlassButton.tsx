@@ -90,7 +90,7 @@ export default function LiquidGlassButton({ children, onClick, className = '' }:
   }, []);
 
   return (
-    <>
+    <span className="shine-border inline-flex rounded-full p-[1.5px]">
       {mapUrl && (
         <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }} colorInterpolationFilters="sRGB">
           <defs>
@@ -112,8 +112,8 @@ export default function LiquidGlassButton({ children, onClick, className = '' }:
           justifyContent: 'center',
           padding: '16px 40px',
           borderRadius: 999,
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          background: 'transparent',
+          border: 'none',
+          background: '#0a0a0a',
           backdropFilter: mapUrl ? `url(#${filterId})` : 'none',
           WebkitBackdropFilter: mapUrl ? `url(#${filterId})` : 'none',
           color: '#ffffff',
@@ -126,11 +126,9 @@ export default function LiquidGlassButton({ children, onClick, className = '' }:
           transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
           e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
           e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
@@ -140,12 +138,12 @@ export default function LiquidGlassButton({ children, onClick, className = '' }:
             position: 'absolute',
             inset: 0,
             borderRadius: 999,
-            background: 'radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.08) 0%, transparent 60%)',
+            background: 'radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.12) 0%, transparent 60%)',
             pointerEvents: 'none',
           }}
         />
         <span style={{ position: 'relative', zIndex: 1 }}>{children}</span>
       </button>
-    </>
+    </span>
   );
 }

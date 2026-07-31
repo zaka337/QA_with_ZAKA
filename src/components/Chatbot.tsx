@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
+import { Sparkles, X, Send, Loader2 } from 'lucide-react';
 import gsap from 'gsap';
 import ReactMarkdown from 'react-markdown';
 
@@ -204,13 +204,15 @@ export default function Chatbot() {
         )}
 
         {!isOpen && (
-          <button
-            onClick={() => setIsOpen(true)}
-            className="pointer-events-auto self-end w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 active:scale-95 transition-all duration-300"
-            aria-label="Open chat"
-          >
-            <MessageSquare size={24} />
-          </button>
+          <span className="pointer-events-auto shine-border self-end rounded-full p-[1.5px] shadow-lg shadow-black/30">
+            <button
+              onClick={() => setIsOpen(true)}
+              className="w-14 h-14 rounded-full bg-[#0a0a0a] text-white/80 flex items-center justify-center hover:scale-110 hover:text-white active:scale-95 transition-all duration-300"
+              aria-label="Open chat"
+            >
+              <Sparkles size={22} />
+            </button>
+          </span>
         )}
       </div>
     </>
