@@ -11,8 +11,6 @@ import {
   type LessonProgress,
 } from '../lib/supabase';
 import { CertificateTemplate } from '../components/CertificateTemplate';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Download, BookOpen, CheckCircle, ChevronRight, MonitorPlay } from 'lucide-react';
 
 type EnrolledCourseData = {
@@ -168,6 +166,13 @@ export default function Dashboard() {
 
     setIsGeneratingCert(courseId);
     try {
+      // Loaded on demand — most students never generate a certificate, so these
+      // shouldn't inflate the bundle every student downloads just to view courses.
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ]);
+
       // 1. Create the PDF instance
       const pdf = new jsPDF({
         orientation: 'landscape',

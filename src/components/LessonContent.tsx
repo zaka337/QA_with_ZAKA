@@ -8,7 +8,28 @@ interface LessonContentProps {
   onQuizSuccess?: () => void;
 }
 
+/**
+ * quiz_data comes straight from a JSONB column with no DB-level shape
+ * enforcement — an admin could save something malformed via the Content
+ * Importer. Guard at render time so a bad quiz degrades to "no quiz"
+ * instead of crashing the whole lesson page.
+ */
+function isValidQuiz(quiz: unknown): quiz is QuizQuestion {
+  if (!quiz || typeof quiz !== 'object') return false;
+  const q = quiz as Partial<QuizQuestion>;
+  return (
+    typeof q.question === 'string' &&
+    Array.isArray(q.options) &&
+    q.options.length > 0 &&
+    q.options.every((o) => typeof o === 'string') &&
+    typeof q.correctIndex === 'number' &&
+    q.correctIndex >= 0 &&
+    q.correctIndex < q.options.length
+  );
+}
+
 export function LessonContent({ content, quiz, onQuizSuccess }: LessonContentProps) {
+  const hasValidQuiz = isValidQuiz(quiz);
   return (
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-12 text-white/90 font-inter font-light">
       <div className="prose prose-invert prose-base sm:prose-lg max-w-none 
@@ -22,9 +43,9 @@ export function LessonContent({ content, quiz, onQuizSuccess }: LessonContentPro
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
 
-      {quiz && (
+      {hasValidQuiz && (
         <div className="mt-16 pt-8 border-t border-white/10">
-          <QuizBlock quiz={quiz} onSuccess={onQuizSuccess} />
+          <QuizBlock quiz={quiz as QuizQuestion} onSuccess={onQuizSuccess} />
         </div>
       )}
     </div>

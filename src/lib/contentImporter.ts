@@ -35,6 +35,31 @@ export interface CourseImportData {
 }
 
 /**
+ * Validates quiz shape before it ever reaches the database. quiz_data is a
+ * JSONB column with no schema enforcement — without this, a malformed quiz
+ * (missing options, out-of-range correctIndex) would save successfully and
+ * only surface as a crash for the first student who opens that lesson.
+ */
+function validateQuiz(quiz: QuizQuestion, lessonTitle: string): void {
+  if (!quiz.question || typeof quiz.question !== 'string') {
+    throw new Error(`Lesson "${lessonTitle}": quiz is missing a "question" string.`);
+  }
+  if (!Array.isArray(quiz.options) || quiz.options.length < 2) {
+    throw new Error(`Lesson "${lessonTitle}": quiz must have at least 2 "options".`);
+  }
+  if (!quiz.options.every((o) => typeof o === 'string')) {
+    throw new Error(`Lesson "${lessonTitle}": all quiz options must be strings.`);
+  }
+  if (
+    typeof quiz.correctIndex !== 'number' ||
+    quiz.correctIndex < 0 ||
+    quiz.correctIndex >= quiz.options.length
+  ) {
+    throw new Error(`Lesson "${lessonTitle}": quiz "correctIndex" must be a valid index into "options".`);
+  }
+}
+
+/**
  * Idempotent Content Importer
  * Safely upserts a Course -> Modules -> Lessons structure.
  */
@@ -90,6 +115,10 @@ export async function importCourseContent(courseData: CourseImportData) {
 
       // 3. Iterate and upsert Lessons
       for (const lessonData of modData.lessons) {
+        if (lessonData.quiz_data) {
+          validateQuiz(lessonData.quiz_data, lessonData.title);
+        }
+
         // Upsert based on module_id + title
         const { data: existingLesson } = await supabase
           .from('lessons')
