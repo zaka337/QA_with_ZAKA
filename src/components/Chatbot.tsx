@@ -106,7 +106,10 @@ export default function Chatbot() {
         />
       )}
 
-      <div className="fixed z-50 bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col items-end pointer-events-none">
+      {/* Sits above the bottom navigation dock — bottom-20/24 rather than
+          bottom-4/6 so the two floating elements never overlap on narrow
+          screens where the dock spans most of the viewport width. */}
+      <div className="fixed z-50 bottom-20 right-4 sm:bottom-24 sm:right-6 flex flex-col items-end pointer-events-none">
         {isOpen && (
           <div
             ref={chatRef}

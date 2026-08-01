@@ -9,7 +9,8 @@ export default function Footer() {
     <footer
       id="footer"
       style={{
-        padding: 'clamp(80px, 10vw, 150px) 5vw 60px',
+        // Extra bottom clearance so the fixed navigation dock never overlaps footer content
+        padding: 'clamp(80px, 10vw, 150px) 5vw 130px',
         background: '#0a0a0a',
         position: 'relative',
         zIndex: 2,
