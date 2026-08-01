@@ -111,42 +111,39 @@ export default function Navigation() {
   }
 
   return (
-    <>
-      {/* Minimal top bar — brand only, navigation now lives in the dock below */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-40 flex items-center px-4 sm:px-6 md:px-[5vw] transition-colors duration-500"
-        style={{
-          height: 80,
-          backgroundColor: scrolled ? 'rgba(10, 10, 10, 0.85)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(8px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
-        }}
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-4 sm:px-6 md:px-[5vw] transition-colors duration-500"
+      style={{
+        height: 80,
+        backgroundColor: scrolled ? 'rgba(10, 10, 10, 0.85)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(8px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+      }}
+    >
+      <a
+        href="#hero"
+        onClick={(e) => { e.preventDefault(); goToAnchor('#hero'); }}
+        className="text-white no-underline z-10 shrink-0"
       >
-        <a
-          href="#hero"
-          onClick={(e) => { e.preventDefault(); goToAnchor('#hero'); }}
-          className="text-white no-underline z-10"
-        >
-          <div className="flex items-center gap-3 group">
-            <div className="relative flex items-center justify-center w-8 h-8">
-              <div className="absolute inset-0 border-[1.5px] border-white/30 rounded-sm rotate-45 group-hover:rotate-180 transition-all duration-700 ease-in-out group-hover:border-white/70"></div>
-              <div className="absolute w-3 h-3 bg-white rounded-[1px] rotate-45 group-hover:bg-[#4ade80] transition-colors duration-700"></div>
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="text-white font-inter font-bold tracking-[0.2em] text-[10px] uppercase leading-none mb-1 opacity-70">
-                QA with
-              </span>
-              <span className="text-white font-eb-garamond text-xl leading-none tracking-wide">
-                ZAKA
-              </span>
-            </div>
+        <div className="flex items-center gap-3 group">
+          <div className="relative flex items-center justify-center w-8 h-8">
+            <div className="absolute inset-0 border-[1.5px] border-white/30 rounded-sm rotate-45 group-hover:rotate-180 transition-all duration-700 ease-in-out group-hover:border-white/70"></div>
+            <div className="absolute w-3 h-3 bg-white rounded-[1px] rotate-45 group-hover:bg-[#4ade80] transition-colors duration-700"></div>
           </div>
-        </a>
-      </nav>
+          <div className="hidden sm:flex flex-col justify-center">
+            <span className="text-white font-inter font-bold tracking-[0.2em] text-[10px] uppercase leading-none mb-1 opacity-70">
+              QA with
+            </span>
+            <span className="text-white font-eb-garamond text-xl leading-none tracking-wide">
+              ZAKA
+            </span>
+          </div>
+        </div>
+      </a>
 
-      {/* Floating dock — the actual navigation, same on every screen size */}
-      <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[94vw]">
-        <Dock className="items-end pb-2.5">
+      {/* The dock replaces the old link row + mobile hamburger/dropdown menu */}
+      <div className="min-w-0 flex-1 flex justify-end sm:justify-center">
+        <Dock className="items-center pb-0" panelHeight={52}>
           {entries.map((entry) => (
             <DockItem
               key={entry.key}
@@ -160,6 +157,6 @@ export default function Navigation() {
           ))}
         </Dock>
       </div>
-    </>
+    </nav>
   );
 }
