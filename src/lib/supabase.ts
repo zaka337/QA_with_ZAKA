@@ -317,6 +317,42 @@ export async function adminEnrollUser(userId: string, courseId: string) {
   return true;
 }
 
+/**
+ * Records a privileged admin action (role change, manual enrollment, etc.)
+ * for accountability. Best-effort: a logging failure should never block the
+ * underlying action, so callers should fire-and-forget or swallow errors.
+ */
+export async function logAdminAction(
+  actorId: string,
+  action: string,
+  targetUserId: string | null,
+  metadata?: Record<string, unknown>
+) {
+  const { error } = await supabase
+    .from('admin_audit_log')
+    .insert({ actor_id: actorId, action, target_user_id: targetUserId, metadata: metadata ?? null });
+  if (error) console.error('Failed to write audit log entry:', error.message);
+}
+
+export type AdminAuditLogEntry = {
+  id: string;
+  actor_id: string;
+  action: string;
+  target_user_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export async function getAdminAuditLog(limit = 50): Promise<AdminAuditLogEntry[]> {
+  const { data, error } = await supabase
+    .from('admin_audit_log')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function getRealAdminStats() {
   // Fetch all required data in parallel
   const [

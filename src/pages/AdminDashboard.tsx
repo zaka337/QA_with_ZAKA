@@ -7,15 +7,16 @@ import {
   Bell, GraduationCap, UserPlus, CreditCard
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import { 
-  getCourseCurriculum, updateModule, updateLesson, 
+import {
+  getCourseCurriculum, updateModule, updateLesson,
   createModule, createLesson, deleteModule, deleteLesson,
-  getAllProfiles, updateUserRole, adminEnrollUser,
+  getAllProfiles, updateUserRole, adminEnrollUser, logAdminAction,
   getStudentsWithDetails, getAdminNotifications,
   type Module, type Profile, type StudentRecord, type AdminNotification
 } from '../lib/supabase';
 import { CodeEditor } from '../components/CodeEditor';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useAuth } from '../hooks/useAuth';
 
 
 
@@ -46,6 +47,7 @@ function LiveClockWidget() {
 
 export default function AdminDashboard() {
   useDocumentTitle('Admin');
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content' | 'students' | 'notifications'>('analytics');
   // Data state
   const [stats, setStats] = useState<any>(null);
@@ -194,9 +196,21 @@ export default function AdminDashboard() {
   };
 
   const handleRoleChange = (userId: string, newRole: string) => {
-    showConfirm(`Change role to ${newRole}?`, async () => {
+    const targetProfile = allProfiles.find(p => p.id === userId);
+    const previousRole = targetProfile?.role || 'student';
+    const isSelf = currentUser?.id === userId;
+
+    const message =
+      isSelf && newRole !== 'admin'
+        ? `⚠️ This will remove YOUR OWN admin access. You will be locked out of this panel immediately. Are you sure?`
+        : `Change role to ${newRole}?`;
+
+    showConfirm(message, async () => {
       try {
         await updateUserRole(userId, newRole);
+        if (currentUser) {
+          logAdminAction(currentUser.id, 'role_change', userId, { from: previousRole, to: newRole });
+        }
         const profiles = await getAllProfiles();
         setAllProfiles(profiles);
       } catch (e: any) {
@@ -210,6 +224,9 @@ export default function AdminDashboard() {
     showConfirm('Manually grant lifetime enrollment?', async () => {
       try {
         await adminEnrollUser(userId, courseId);
+        if (currentUser) {
+          logAdminAction(currentUser.id, 'manual_enroll', userId, { courseId, plan: 'lifetime' });
+        }
         showAlert('User successfully enrolled!');
         await loadData();
       } catch (e: any) {
