@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from 'recharts';
-import { 
+import {
   Users, DollarSign, Activity, BookOpen, Plus, Trash2, Edit2, Save, LayoutDashboard, ListTree, UploadCloud,
-  Bell, GraduationCap, UserPlus, CreditCard
+  Bell, GraduationCap, UserPlus, CreditCard, History, ShieldAlert
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import {
   getCourseCurriculum, updateModule, updateLesson,
   createModule, createLesson, deleteModule, deleteLesson,
   getAllProfiles, updateUserRole, adminEnrollUser, logAdminAction,
-  getStudentsWithDetails, getAdminNotifications,
-  type Module, type Profile, type StudentRecord, type AdminNotification
+  getStudentsWithDetails, getAdminNotifications, getAdminAuditLog,
+  type Module, type Profile, type StudentRecord, type AdminNotification, type AdminAuditLogEntry
 } from '../lib/supabase';
 import { CodeEditor } from '../components/CodeEditor';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -48,7 +48,7 @@ function LiveClockWidget() {
 export default function AdminDashboard() {
   useDocumentTitle('Admin');
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content' | 'students' | 'notifications'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content' | 'students' | 'notifications' | 'audit'>('analytics');
   // Data state
   const [stats, setStats] = useState<any>(null);
   const [modules, setModules] = useState<Module[]>([]);
@@ -61,6 +61,8 @@ export default function AdminDashboard() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [auditLog, setAuditLog] = useState<AdminAuditLogEntry[]>([]);
+  const [loadingAuditLog, setLoadingAuditLog] = useState(false);
 
   const toggleStudentProgress = (id: string) => {
     setExpandedStudents(prev => {
@@ -131,6 +133,18 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadAuditLog = async () => {
+    setLoadingAuditLog(true);
+    try {
+      const data = await getAdminAuditLog();
+      setAuditLog(data);
+    } catch (e) {
+      console.error('Failed to load audit log:', e);
+    } finally {
+      setLoadingAuditLog(false);
+    }
+  };
+
   const loadNotifications = async () => {
     setLoadingNotifications(true);
     try {
@@ -143,10 +157,11 @@ export default function AdminDashboard() {
     }
   };
 
-  // Lazy-load students/notifications when tab is first opened
+  // Lazy-load students/notifications/audit log when tab is first opened
   useEffect(() => {
     if (activeTab === 'students' && students.length === 0) loadStudents();
     if (activeTab === 'notifications' && notifications.length === 0) loadNotifications();
+    if (activeTab === 'audit' && auditLog.length === 0) loadAuditLog();
   }, [activeTab]);
 
   /* ── Handlers ── */
@@ -327,6 +342,13 @@ export default function AdminDashboard() {
             >
               <UploadCloud size={14} />
               Importer
+            </button>
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest rounded-none transition-colors ${activeTab === 'audit' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+            >
+              <History size={14} />
+              Audit Log
             </button>
           </div>
         </div>
@@ -1141,6 +1163,90 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Audit Log Tab ── */}
+        {activeTab === 'audit' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-white/10 pb-6">
+              <div>
+                <h2 className="text-xl font-ndot tracking-widest uppercase">Audit Log</h2>
+                <p className="text-white/40 font-mono text-xs mt-1 uppercase tracking-wider">
+                  Append-only record of role changes and manual enrollments
+                </p>
+              </div>
+              <button
+                onClick={() => loadAuditLog()}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest border-2 border-white/20 hover:border-white text-white/50 hover:text-white transition-colors"
+              >
+                <History size={13} />
+                Refresh
+              </button>
+            </div>
+
+            {loadingAuditLog ? (
+              <div className="flex flex-col items-center justify-center h-[400px] gap-4 text-white/50">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+                <p className="font-mono text-xs uppercase tracking-widest">Loading audit log...</p>
+              </div>
+            ) : auditLog.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[300px] gap-4 text-white/30 font-mono text-xs uppercase tracking-widest">
+                <History size={36} className="opacity-20" />
+                No privileged actions recorded yet
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {auditLog.map(entry => {
+                  const actor = allProfiles.find(p => p.id === entry.actor_id);
+                  const target = entry.target_user_id ? allProfiles.find(p => p.id === entry.target_user_id) : null;
+                  const actorName = actor?.display_name || entry.actor_id.slice(0, 8);
+                  const targetName = target?.display_name || entry.target_user_id?.slice(0, 8) || null;
+                  const meta = entry.metadata || {};
+
+                  let description: React.ReactNode = entry.action;
+                  let isSensitive = false;
+                  if (entry.action === 'role_change') {
+                    isSensitive = meta.to === 'admin' || meta.from === 'admin';
+                    description = (
+                      <>
+                        changed <span className="text-white">{targetName}</span>'s role from{' '}
+                        <span className="text-white/70 uppercase">{String(meta.from)}</span> to{' '}
+                        <span className={isSensitive ? 'text-[#ea1f27] uppercase font-semibold' : 'text-white/70 uppercase'}>{String(meta.to)}</span>
+                      </>
+                    );
+                  } else if (entry.action === 'manual_enroll') {
+                    description = (
+                      <>
+                        manually enrolled <span className="text-white">{targetName}</span> with{' '}
+                        <span className="text-amber-400 uppercase">{String(meta.plan || 'lifetime')}</span> access
+                      </>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`flex items-start gap-4 p-4 border-l-4 bg-white/[0.02] border-r border-t border-b border-white/5 transition-colors hover:bg-white/[0.04] ${
+                        isSensitive ? 'border-l-[#ea1f27]/70' : 'border-l-white/20'
+                      }`}
+                    >
+                      <div className={`shrink-0 mt-0.5 ${isSensitive ? 'text-[#ea1f27]' : 'text-white/40'}`}>
+                        {isSensitive ? <ShieldAlert size={16} /> : <History size={16} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/90 text-sm font-medium">
+                          <span className="text-white">{actorName}</span> {description}
+                        </p>
+                        <p className="text-white/25 text-[10px] font-mono mt-1 uppercase tracking-wider">
+                          {new Date(entry.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
