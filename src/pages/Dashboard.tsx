@@ -11,6 +11,7 @@ import {
   type LessonProgress,
 } from '../lib/supabase';
 import { CertificateTemplate } from '../components/CertificateTemplate';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Download, BookOpen, CheckCircle, ChevronRight, MonitorPlay } from 'lucide-react';
 
 type EnrolledCourseData = {
@@ -75,6 +76,7 @@ function getCourseVisual(course: Course): CourseVisual {
 }
 
 export default function Dashboard() {
+  useDocumentTitle('Dashboard');
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();

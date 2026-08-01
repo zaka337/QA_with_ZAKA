@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { Button } from '../components/Button';
 import { AnimatedHero } from '../components/ui/animated-hero';
 import { useAuth } from '../hooks/useAuth';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
 
@@ -11,6 +12,7 @@ const LIFETIME_PRICE_ID = import.meta.env.VITE_STRIPE_LIFETIME_PRICE_ID;
 const MONTHLY_PRICE_ID = import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID;
 
 export default function Pricing() {
+  useDocumentTitle('Pricing');
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, role, isLoading } = useAuth();

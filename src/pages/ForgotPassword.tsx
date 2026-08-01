@@ -7,6 +7,7 @@ import { useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '../lib/supabase';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const schema = z.object({
   email: z
@@ -18,6 +19,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function ForgotPassword() {
+  useDocumentTitle('Forgot Password');
   const containerRef = useRef<HTMLDivElement>(null);
   const [successMsg, setSuccessMsg] = useState('');
 

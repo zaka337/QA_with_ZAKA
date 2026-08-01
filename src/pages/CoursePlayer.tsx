@@ -13,6 +13,7 @@ import {
 } from '../lib/supabase';
 import { LessonContent } from '../components/LessonContent';
 import { CodeEditor } from '../components/CodeEditor';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type LogType = 'info' | 'success' | 'error' | 'system';
 interface TerminalLog {
@@ -33,6 +34,8 @@ export default function CoursePlayer() {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+
+  useDocumentTitle(activeLesson?.title || 'Course Player');
 
   // For code editor state
   const [, setCodeValue] = useState('');

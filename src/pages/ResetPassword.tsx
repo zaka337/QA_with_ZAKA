@@ -7,6 +7,7 @@ import { useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '../lib/supabase';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const schema = z
   .object({
@@ -28,6 +29,7 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 export default function ResetPassword() {
+  useDocumentTitle('Reset Password');
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [successMsg, setSuccessMsg] = useState('');

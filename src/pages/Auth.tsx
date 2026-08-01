@@ -7,6 +7,7 @@ import { useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '../lib/supabase';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /* ── Schemas ── */
 const loginSchema = z.object({
@@ -82,9 +83,10 @@ const socialProviders = [
 ];
 
 export default function Auth({ type }: AuthProps) {
+  const isLogin = type === 'login';
+  useDocumentTitle(isLogin ? 'Log In' : 'Sign Up');
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const isLogin = type === 'login';
   const [successMsg, setSuccessMsg] = useState('');
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
 

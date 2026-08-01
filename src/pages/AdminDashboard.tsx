@@ -15,6 +15,7 @@ import {
   type Module, type Profile, type StudentRecord, type AdminNotification
 } from '../lib/supabase';
 import { CodeEditor } from '../components/CodeEditor';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 
 
@@ -44,6 +45,7 @@ function LiveClockWidget() {
 }
 
 export default function AdminDashboard() {
+  useDocumentTitle('Admin');
   const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content' | 'students' | 'notifications'>('analytics');
   // Data state
   const [stats, setStats] = useState<any>(null);
@@ -521,7 +523,7 @@ export default function AdminDashboard() {
                         type="text" 
                         value={editForm.title || ''} 
                         onChange={e => setEditForm({...editForm, title: e.target.value})}
-                        className="bg-transparent border-none text-2xl font-ndot tracking-widest focus:outline-none focus:ring-0 text-white w-96 placeholder-white/20 uppercase"
+                        className="bg-transparent border-none border-b-2 border-transparent focus:border-white/40 focus:outline-none text-2xl font-ndot tracking-widest text-white w-96 placeholder-white/20 uppercase transition-colors"
                         placeholder="ENTER TITLE..."
                       />
                     </div>

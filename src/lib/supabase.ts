@@ -85,8 +85,19 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
   return !error;
 }
 
-/** Upload an avatar to Supabase Storage */
-export async function uploadAvatar(userId: string, file: File): Promise<string | null> {
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB — matches the avatars bucket's server-side limit
+
+/** Upload an avatar to Supabase Storage. Throws a descriptive error on failure
+ *  or rejection so callers can surface it, instead of silently keeping the old avatar. */
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    throw new Error('Please upload a JPEG, PNG, WebP, or GIF image.');
+  }
+  if (file.size > MAX_AVATAR_BYTES) {
+    throw new Error('Image must be 5MB or smaller.');
+  }
+
   const fileExt = file.name.split('.').pop();
   const filePath = `${userId}-${Math.random()}.${fileExt}`;
 
@@ -95,8 +106,7 @@ export async function uploadAvatar(userId: string, file: File): Promise<string |
     .upload(filePath, file);
 
   if (uploadError) {
-    console.error('Error uploading avatar:', uploadError.message);
-    return null;
+    throw new Error(`Avatar upload failed: ${uploadError.message}`);
   }
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);

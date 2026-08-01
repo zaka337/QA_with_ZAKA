@@ -4,8 +4,10 @@ import gsap from 'gsap';
 import { useAuth } from '../hooks/useAuth';
 import { supabase, getProfile, updateProfile, uploadAvatar } from '../lib/supabase';
 import { Button } from '../components/Button';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function Settings() {
+  useDocumentTitle('Settings');
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -69,10 +71,8 @@ export default function Settings() {
       // Upload new avatar if selected
       if (avatarFile) {
         const uploadedUrl = await uploadAvatar(user.id, avatarFile);
-        if (uploadedUrl) {
-          finalAvatarUrl = uploadedUrl;
-          setAvatarUrl(uploadedUrl);
-        }
+        finalAvatarUrl = uploadedUrl;
+        setAvatarUrl(uploadedUrl);
       }
 
       // Update auth.users metadata (so Navigation updates instantly)
@@ -95,7 +95,7 @@ export default function Settings() {
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err: any) {
       console.error(err);
-      alert('Failed to save profile.');
+      alert(err?.message || 'Failed to save profile.');
     } finally {
       setSaving(false);
     }
