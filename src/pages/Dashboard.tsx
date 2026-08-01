@@ -182,26 +182,18 @@ export default function Dashboard() {
         format: [1123, 794]
       });
 
-      // 2. Load and add the background image directly (bulletproof rendering)
-      const bgImg = new Image();
-      bgImg.src = '/images/completion-certificate.webp';
-      await new Promise((resolve, reject) => {
-        bgImg.onload = resolve;
-        bgImg.onerror = reject;
-      });
-      pdf.addImage(bgImg, 'PNG', 0, 0, 1123, 794);
-
-      // 3. Render the text overlay using html2canvas (transparent background)
+      // 2. Render the entire certificate — background, border, seal, and text
+      // are all part of CertificateTemplate now (no separate raster background
+      // image to keep in sync with the dynamically-filled fields).
       const canvas = await html2canvas(certElement, {
         scale: 2, // High resolution
-        backgroundColor: null, // Ensure transparent background
       });
 
-      // 4. Add the transparent text layer on top of the background
-      const textImgData = canvas.toDataURL('image/png');
-      pdf.addImage(textImgData, 'PNG', 0, 0, 1123, 794);
+      // 3. Add the flattened certificate image to the PDF
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, 1123, 794);
 
-      // 5. Save the PDF
+      // 4. Save the PDF
       pdf.save(`${courseTitle.replace(/\s+/g, '_')}_Certificate.pdf`);
     } catch (error) {
       console.error('Error generating certificate:', error);
