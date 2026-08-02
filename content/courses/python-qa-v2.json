@@ -1,0 +1,309 @@
+{
+  "slug": "python-qa",
+  "title": "Python for QA Testers",
+  "description": "A complete Python foundation for QA engineers — language fundamentals, pytest mastery, API testing, UI automation bindings, and CI/CD, built for testers who want real engineering depth, not just scripts.",
+  "thumbnail_url": "",
+  "modules": [
+    {
+      "title": "Module 1: Python Foundations for Testers",
+      "lessons": [
+        {
+          "title": "Why Python for QA",
+          "description": "Understand the ecosystem that makes Python the default QA language in 2026.",
+          "content_markdown": "## The QA Python Ecosystem\n\nPython dominates test automation not because of the language alone, but because of the ecosystem built around it:\n\n- **pytest** — the de facto test runner, with the richest fixture/plugin ecosystem of any language\n- **requests** / **httpx** — the standard for API testing\n- **Selenium** and **Playwright** Python bindings — full parity with their JS counterparts\n- **pydantic** — schema validation for API contract testing\n- **Allure** / **pytest-html** — professional-grade reporting\n\nThis course builds each of these skills in order: language fundamentals first, then pytest, then API testing, then UI automation — so by the capstone you're combining all of them into one real suite, not learning them as disconnected tricks.",
+          "starter_code": "# Python's role in QA: readable syntax + a mature testing ecosystem\n# (pytest, requests, Selenium/Playwright bindings) built on top of it.\nprint(\"Let's build real QA engineering skills.\")\n",
+          "duration": "6 min"
+        },
+        {
+          "title": "Variables, Data Types & Control Flow for Test Scripts",
+          "description": "The Python fundamentals you'll use in every single test you write.",
+          "content_markdown": "## The Building Blocks\n\n```python\n# Variables & core types\nbase_url = \"https://api.example.com\"\nmax_retries = 3\ntimeout_seconds = 10.5\nis_authenticated = False\n\n# Lists and dicts — you'll use these constantly for test data\nuser_roles = [\"admin\", \"editor\", \"viewer\"]\nexpected_response = {\"status\": \"ok\", \"code\": 200}\n\n# Control flow\nfor role in user_roles:\n    if role == \"admin\":\n        print(f\"Testing admin-only endpoints for role: {role}\")\n    else:\n        print(f\"Testing standard access for role: {role}\")\n\n# List comprehensions — concise, common in real test code\nactive_users = [u for u in get_users() if u[\"status\"] == \"active\"]\n```\n\nIf you're coming from another language, Python's biggest adjustment is significant whitespace (indentation defines blocks, not braces) and duck typing (variables aren't declared with a fixed type). Both make test scripts faster to write once they're second nature.",
+          "starter_code": "user_roles = [\"admin\", \"editor\", \"viewer\"]\n\nfor role in user_roles:\n    if role == \"admin\":\n        print(f\"Testing admin-only endpoints for role: {role}\")\n    else:\n        print(f\"Testing standard access for role: {role}\")\n",
+          "quiz_data": {
+            "id": "py-m1-l2-q1",
+            "type": "multiple-choice",
+            "question": "In Python, what defines the boundaries of a code block (like an if statement's body)?",
+            "options": [
+              "Curly braces { }",
+              "Indentation (whitespace)",
+              "The 'end' keyword",
+              "Semicolons"
+            ],
+            "correctIndex": 1,
+            "explanation": "Python uses significant whitespace/indentation to define blocks instead of braces or keywords — a key adjustment for developers coming from C-style languages."
+          },
+          "duration": "10 min"
+        },
+        {
+          "title": "Functions, Modules & Virtual Environments",
+          "description": "Organize test code properly from day one.",
+          "content_markdown": "## Functions\n\n```python\ndef build_test_user(role=\"student\", verified=True):\n    return {\"email\": f\"test-{role}@example.com\", \"role\": role, \"verified\": verified}\n\nadmin_user = build_test_user(role=\"admin\")\n```\n\n## Modules\n\nSplit test helpers into importable files instead of one giant script:\n```python\n# helpers/users.py\ndef build_test_user(role=\"student\"):\n    ...\n\n# test_signup.py\nfrom helpers.users import build_test_user\n```\n\n## Virtual Environments — Non-Negotiable\n\n```bash\npython -m venv .venv\nsource .venv/bin/activate   # Windows: .venv\\Scripts\\activate\npip install pytest requests selenium\npip freeze > requirements.txt\n```\n\nA virtual environment isolates your project's dependencies from your system Python and from other projects. Skipping this is the #1 cause of \"it works on my machine but not in CI\" for Python test suites — different projects silently depending on conflicting library versions installed globally.",
+          "starter_code": "def build_test_user(role=\"student\", verified=True):\n    return {\"email\": f\"test-{role}@example.com\", \"role\": role, \"verified\": verified}\n\nadmin_user = build_test_user(role=\"admin\")\nprint(admin_user)\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "Working with Files & JSON",
+          "description": "Manage test fixtures and data the way real suites do.",
+          "content_markdown": "## Reading Test Data from JSON\n\n```python\nimport json\n\nwith open(\"fixtures/users.json\") as f:\n    test_users = json.load(f)\n\nfor user in test_users:\n    print(user[\"email\"], user[\"role\"])\n```\n\n## Writing Results\n\n```python\nresults = {\"passed\": 42, \"failed\": 1, \"skipped\": 3}\nwith open(\"results/summary.json\", \"w\") as f:\n    json.dump(results, f, indent=2)\n```\n\nKeeping test data in JSON fixture files (rather than hardcoded in test functions) means non-engineers can update test data, and the same fixture can be reused across many tests without duplication.",
+          "starter_code": "import json\n\nwith open(\"fixtures/users.json\") as f:\n    test_users = json.load(f)\n\nfor user in test_users:\n    print(user[\"email\"], user[\"role\"])\n",
+          "duration": "8 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 2: Pytest Mastery",
+      "lessons": [
+        {
+          "title": "Pytest Basics: Discovery, Assertions & Fixtures",
+          "description": "Understand how pytest actually finds and runs your tests.",
+          "content_markdown": "## Test Discovery\n\nPytest automatically finds tests using naming conventions: files named `test_*.py` or `*_test.py`, functions named `test_*`, classes named `Test*`.\n\n```python\n# test_math.py\ndef test_addition():\n    assert 2 + 2 == 4\n\ndef test_string_formatting():\n    name = \"Zaka\"\n    assert f\"Hello, {name}\" == \"Hello, Zaka\"\n```\n\n## Plain `assert` — No Special Syntax Needed\n\nUnlike many frameworks, pytest uses Python's built-in `assert` and rewrites it to give rich failure output automatically:\n```\n>       assert 2 + 2 == 5\nE       assert 4 == 5\n```\n\n## Fixtures: Reusable Setup\n\n```python\nimport pytest\n\n@pytest.fixture\ndef api_client():\n    client = ApiClient(base_url=\"https://api.example.com\")\n    yield client\n    client.close()  # teardown runs after the test\n\ndef test_get_users(api_client):\n    response = api_client.get(\"/users\")\n    assert response.status_code == 200\n```\n\nThe `yield` splits a fixture into setup (before) and teardown (after) — pytest guarantees the teardown runs even if the test fails.",
+          "starter_code": "import pytest\n\n@pytest.fixture\ndef api_client():\n    client = ApiClient(base_url=\"https://api.example.com\")\n    yield client\n    client.close()\n\ndef test_get_users(api_client):\n    response = api_client.get(\"/users\")\n    assert response.status_code == 200\n",
+          "quiz_data": {
+            "id": "py-m2-l1-q1",
+            "type": "multiple-choice",
+            "question": "In a pytest fixture using yield, what happens to the code after the yield statement?",
+            "options": [
+              "It never runs",
+              "It runs as teardown after the test completes, even if the test fails",
+              "It runs before the test as additional setup",
+              "It only runs if the test passes"
+            ],
+            "correctIndex": 1,
+            "explanation": "yield splits a fixture into setup (before yield) and teardown (after yield). Pytest guarantees the teardown code runs regardless of whether the test passed or failed."
+          },
+          "duration": "11 min"
+        },
+        {
+          "title": "Parametrization & Data-Driven Tests",
+          "description": "Run one test function against many inputs cleanly.",
+          "content_markdown": "## `@pytest.mark.parametrize`\n\n```python\nimport pytest\n\n@pytest.mark.parametrize(\"email,is_valid\", [\n    (\"user@example.com\", True),\n    (\"not-an-email\", False),\n    (\"\", False),\n    (\"user@sub.example.com\", True),\n])\ndef test_email_validation(email, is_valid):\n    assert validate_email(email) == is_valid\n```\n\nRunning `pytest -v` shows each case as its own labeled result:\n```\ntest_email_validation[user@example.com-True] PASSED\ntest_email_validation[not-an-email-False] PASSED\n```\n\nThis is the single highest-leverage pytest feature for QA work — most real-world test coverage gaps come from under-testing input variations, and parametrization makes covering them nearly free.",
+          "starter_code": "import pytest\n\n@pytest.mark.parametrize(\"email,is_valid\", [\n    (\"user@example.com\", True),\n    (\"not-an-email\", False),\n    (\"\", False),\n])\ndef test_email_validation(email, is_valid):\n    assert validate_email(email) == is_valid\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "Fixture Scopes & conftest.py",
+          "description": "Share setup efficiently across many test files.",
+          "content_markdown": "## `conftest.py`: Shared Fixtures Without Imports\n\nAny fixture defined in `conftest.py` is automatically available to every test in that directory (and subdirectories) — no import needed.\n\n```python\n# conftest.py\nimport pytest\n\n@pytest.fixture(scope=\"session\")\ndef db_connection():\n    conn = connect_to_test_db()\n    yield conn\n    conn.close()\n\n@pytest.fixture(scope=\"function\")\ndef clean_user_table(db_connection):\n    db_connection.execute(\"DELETE FROM users\")\n    yield\n```\n\n## Scopes\n\n- `function` (default) — runs once per test\n- `class` — once per test class\n- `module` — once per file\n- `session` — once for the entire test run\n\nUse `session` scope for expensive setup you truly only need once (a database connection); use `function` scope for anything that must be fresh per test (avoiding state leaking between tests, a classic source of order-dependent flakiness).",
+          "starter_code": "import pytest\n\n@pytest.fixture(scope=\"session\")\ndef db_connection():\n    conn = connect_to_test_db()\n    yield conn\n    conn.close()\n",
+          "quiz_data": {
+            "id": "py-m2-l3-q1",
+            "type": "multiple-choice",
+            "question": "Why would you use scope='function' instead of scope='session' for a fixture that resets database state?",
+            "options": [
+              "function scope is faster to type",
+              "Session scope only allows read operations",
+              "Function-scoped fixtures run fresh for every test, preventing state from one test leaking into another",
+              "There is no real difference between the two"
+            ],
+            "correctIndex": 2,
+            "explanation": "A session-scoped reset would only run once for the whole test run, letting state accumulate across tests and causing order-dependent failures. Function scope guarantees a clean slate per test."
+          },
+          "duration": "10 min"
+        },
+        {
+          "title": "Markers, Skipping & Custom Configuration",
+          "description": "Control exactly which tests run, and when.",
+          "content_markdown": "## Built-in Markers\n\n```python\nimport pytest\n\n@pytest.mark.skip(reason=\"Feature not deployed to staging yet\")\ndef test_new_checkout_flow():\n    ...\n\n@pytest.mark.skipif(sys.platform == \"win32\", reason=\"POSIX-only file permissions test\")\ndef test_file_permissions():\n    ...\n\n@pytest.mark.xfail(reason=\"Known bug JIRA-4521\")\ndef test_known_broken_feature():\n    ...\n```\n\n## Custom Markers\n\n```python\n# pytest.ini\n[pytest]\nmarkers =\n    smoke: quick sanity checks run on every commit\n    regression: full suite run nightly\n```\n```bash\npytest -m smoke   # run only smoke-marked tests\n```\n\nCustom markers let a large suite be sliced by purpose — a fast \"smoke\" subset gates every commit, while the full \"regression\" suite runs on a schedule, without maintaining two separate test directories.",
+          "starter_code": "import pytest\n\n@pytest.mark.smoke\ndef test_homepage_loads():\n    ...\n\n@pytest.mark.xfail(reason=\"Known bug JIRA-4521\")\ndef test_known_broken_feature():\n    ...\n",
+          "duration": "9 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 3: API Testing with Python",
+      "lessons": [
+        {
+          "title": "HTTP Fundamentals & the requests Library",
+          "description": "Test REST APIs directly, without a browser.",
+          "content_markdown": "## Your First API Test\n\n```python\nimport requests\n\ndef test_get_user():\n    response = requests.get(\"https://api.example.com/users/1\")\n    assert response.status_code == 200\n    data = response.json()\n    assert data[\"id\"] == 1\n    assert \"email\" in data\n```\n\n## All the HTTP Verbs\n\n```python\nrequests.get(url)\nrequests.post(url, json={\"name\": \"New Course\"})\nrequests.put(url, json={\"name\": \"Updated Course\"})\nrequests.patch(url, json={\"price\": 49.99})\nrequests.delete(url)\n```\n\nAPI tests run dramatically faster than UI tests (no browser startup, no rendering, no waits for animations) — this is why a well-designed test suite pushes as much coverage as possible down to the API layer, reserving UI tests for things that can only be verified visually.",
+          "starter_code": "import requests\n\ndef test_get_user():\n    response = requests.get(\"https://api.example.com/users/1\")\n    assert response.status_code == 200\n    data = response.json()\n    assert data[\"id\"] == 1\n",
+          "quiz_data": {
+            "id": "py-m3-l1-q1",
+            "type": "multiple-choice",
+            "question": "Why do well-designed test suites push as much coverage as possible into API tests rather than UI tests?",
+            "options": [
+              "API tests are always more important to stakeholders",
+              "API tests run much faster since there's no browser startup, rendering, or animation waits involved",
+              "UI tests are being deprecated industry-wide",
+              "API tests don't require assertions"
+            ],
+            "correctIndex": 1,
+            "explanation": "Without browser overhead, API tests execute in milliseconds instead of seconds, letting a suite run far more coverage in the same CI time budget — UI tests are reserved for what can only be verified visually."
+          },
+          "duration": "9 min"
+        },
+        {
+          "title": "Testing REST APIs: Status Codes, Headers & Schemas",
+          "description": "Go beyond '200 OK' to real contract validation.",
+          "content_markdown": "## Thorough API Assertions\n\n```python\ndef test_create_course():\n    response = requests.post(\n        \"https://api.example.com/courses\",\n        json={\"title\": \"New Course\", \"price\": 49.99},\n        headers={\"Authorization\": f\"Bearer {token}\"}\n    )\n\n    assert response.status_code == 201\n    assert response.headers[\"Content-Type\"] == \"application/json\"\n\n    data = response.json()\n    assert data[\"title\"] == \"New Course\"\n    assert isinstance(data[\"id\"], str)\n    assert data[\"price\"] == 49.99\n```\n\n## Schema Validation with `jsonschema`\n\n```python\nfrom jsonschema import validate\n\ncourse_schema = {\n    \"type\": \"object\",\n    \"required\": [\"id\", \"title\", \"price\"],\n    \"properties\": {\n        \"id\": {\"type\": \"string\"},\n        \"title\": {\"type\": \"string\"},\n        \"price\": {\"type\": \"number\"},\n    },\n}\nvalidate(instance=response.json(), schema=course_schema)\n```\n\nSchema validation catches an entire category of bugs (a field silently becoming null, a type changing from number to string) that a handful of manual `assert` statements would easily miss.",
+          "starter_code": "from jsonschema import validate\n\ncourse_schema = {\n    \"type\": \"object\",\n    \"required\": [\"id\", \"title\", \"price\"],\n    \"properties\": {\n        \"id\": {\"type\": \"string\"},\n        \"title\": {\"type\": \"string\"},\n        \"price\": {\"type\": \"number\"},\n    },\n}\n\ndef test_course_schema(api_response):\n    validate(instance=api_response.json(), schema=course_schema)\n",
+          "duration": "11 min"
+        },
+        {
+          "title": "Authentication Flows in API Tests",
+          "description": "Handle the auth patterns you'll meet in almost every real API.",
+          "content_markdown": "## Bearer Token Auth\n\n```python\n@pytest.fixture(scope=\"session\")\ndef auth_token():\n    response = requests.post(\"https://api.example.com/login\", json={\n        \"email\": \"qa@zaka.dev\", \"password\": \"Secure123!\"\n    })\n    return response.json()[\"token\"]\n\ndef test_protected_endpoint(auth_token):\n    response = requests.get(\n        \"https://api.example.com/dashboard\",\n        headers={\"Authorization\": f\"Bearer {auth_token}\"}\n    )\n    assert response.status_code == 200\n```\n\n## API Key Auth\n```python\nrequests.get(url, headers={\"X-API-Key\": api_key})\n```\n\n## OAuth (Client Credentials Flow)\n```python\ntoken_response = requests.post(\"https://auth.example.com/oauth/token\", data={\n    \"grant_type\": \"client_credentials\",\n    \"client_id\": client_id,\n    \"client_secret\": client_secret,\n})\naccess_token = token_response.json()[\"access_token\"]\n```\n\nAuthenticate **once** in a session-scoped fixture and reuse the token across many tests — re-authenticating in every single test wastes time and can trigger rate limits on the auth endpoint itself.",
+          "starter_code": "@pytest.fixture(scope=\"session\")\ndef auth_token():\n    response = requests.post(\"https://api.example.com/login\", json={\n        \"email\": \"qa@zaka.dev\", \"password\": \"Secure123!\"\n    })\n    return response.json()[\"token\"]\n\ndef test_protected_endpoint(auth_token):\n    response = requests.get(\n        \"https://api.example.com/dashboard\",\n        headers={\"Authorization\": f\"Bearer {auth_token}\"}\n    )\n    assert response.status_code == 200\n",
+          "quiz_data": {
+            "id": "py-m3-l3-q1",
+            "type": "multiple-choice",
+            "question": "Why should an auth token be fetched in a session-scoped fixture rather than re-authenticated in every test?",
+            "options": [
+              "Session scope is required by the requests library",
+              "Re-authenticating per test wastes time and can trigger rate limits on the auth endpoint",
+              "Tokens expire after one use",
+              "Function-scoped fixtures cannot make HTTP requests"
+            ],
+            "correctIndex": 1,
+            "explanation": "Authenticating once per test session and reusing the token avoids unnecessary load on the auth endpoint and speeds up the overall suite significantly."
+          },
+          "duration": "10 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 4: UI Automation with Python",
+      "lessons": [
+        {
+          "title": "Selenium & Playwright Python Bindings",
+          "description": "Compare the two major UI automation options available in Python.",
+          "content_markdown": "## Two Solid Choices\n\n```python\n# Selenium\nfrom selenium import webdriver\ndriver = webdriver.Chrome()\ndriver.get(\"https://example.com\")\n\n# Playwright (sync API)\nfrom playwright.sync_api import sync_playwright\nwith sync_playwright() as p:\n    browser = p.chromium.launch()\n    page = browser.new_page()\n    page.goto(\"https://example.com\")\n```\n\n### When to choose which\n- **Selenium**: broader industry adoption, W3C standard, best choice if your team already has Selenium infrastructure or needs Grid/cloud-provider compatibility\n- **Playwright**: built-in auto-waiting, faster execution, better debugging tools (trace viewer) — the stronger choice for a brand-new project\n\nBoth are legitimate, widely-used choices in 2026 — this course covers Selenium bindings since they pair naturally with everything you've learned so far, but the concepts (locators, waits, page objects) transfer directly to Playwright's Python API too.",
+          "starter_code": "from selenium import webdriver\nfrom selenium.webdriver.common.by import By\n\ndriver = webdriver.Chrome()\ndriver.get(\"https://example.com\")\nassert driver.find_element(By.TAG_NAME, \"h1\").text == \"Example Domain\"\ndriver.quit()\n",
+          "duration": "9 min"
+        },
+        {
+          "title": "Building a Page Object Model in Python",
+          "description": "Apply POM using proper Python class design.",
+          "content_markdown": "## A Clean Python POM\n\n```python\nfrom selenium.webdriver.common.by import By\n\nclass DashboardPage:\n    URL = \"https://app.example.com/dashboard\"\n\n    def __init__(self, driver):\n        self.driver = driver\n\n    def load(self):\n        self.driver.get(self.URL)\n        return self\n\n    @property\n    def welcome_heading(self):\n        return self.driver.find_element(By.CSS_SELECTOR, \"h1.welcome\")\n\n    def enrolled_course_titles(self):\n        cards = self.driver.find_elements(By.CLASS_NAME, \"course-card\")\n        return [card.find_element(By.TAG_NAME, \"h3\").text for card in cards]\n```\n\n```python\ndef test_dashboard_shows_enrolled_courses(driver):\n    dashboard = DashboardPage(driver).load()\n    assert \"Welcome back\" in dashboard.welcome_heading.text\n    assert \"Python for QA Testers\" in dashboard.enrolled_course_titles()\n```\n\nUsing `@property` for single elements and a plain method for collections is a common, readable Python convention — it keeps the test assertions themselves free of any raw locator or `find_element` call.",
+          "starter_code": "from selenium.webdriver.common.by import By\n\nclass DashboardPage:\n    URL = \"https://app.example.com/dashboard\"\n\n    def __init__(self, driver):\n        self.driver = driver\n\n    def load(self):\n        self.driver.get(self.URL)\n        return self\n\n    def enrolled_course_titles(self):\n        cards = self.driver.find_elements(By.CLASS_NAME, \"course-card\")\n        return [card.find_element(By.TAG_NAME, \"h3\").text for card in cards]\n",
+          "duration": "12 min"
+        },
+        {
+          "title": "Combining Pytest + Selenium Cleanly",
+          "description": "Wire up driver lifecycle management the right way.",
+          "content_markdown": "## The Driver Fixture Pattern\n\n```python\n# conftest.py\nimport pytest\nfrom selenium import webdriver\n\n@pytest.fixture\ndef driver():\n    options = webdriver.ChromeOptions()\n    options.add_argument(\"--headless=new\")\n    drv = webdriver.Chrome(options=options)\n    drv.implicitly_wait(0)  # explicit waits only, as covered earlier\n    yield drv\n    drv.quit()\n```\n\nEvery test that needs a browser just declares `driver` as a parameter — pytest handles creation and teardown automatically, and each test gets a **fresh browser instance**, eliminating state leakage between UI tests (cookies, localStorage, open tabs from a previous test).\n\n```python\ndef test_login_page_loads(driver):\n    driver.get(\"https://app.example.com/login\")\n    assert \"Log In\" in driver.title\n```",
+          "starter_code": "import pytest\nfrom selenium import webdriver\n\n@pytest.fixture\ndef driver():\n    options = webdriver.ChromeOptions()\n    options.add_argument(\"--headless=new\")\n    drv = webdriver.Chrome(options=options)\n    yield drv\n    drv.quit()\n\ndef test_login_page_loads(driver):\n    driver.get(\"https://app.example.com/login\")\n    assert \"Log In\" in driver.title\n",
+          "quiz_data": {
+            "id": "py-m4-l3-q1",
+            "type": "multiple-choice",
+            "question": "Why does putting the WebDriver instance in a pytest fixture help avoid flaky UI tests?",
+            "options": [
+              "It makes tests run in parallel automatically",
+              "Each test gets a fresh browser instance, eliminating cookie/localStorage/tab state leaking between tests",
+              "Fixtures are required by Selenium",
+              "It removes the need for explicit waits"
+            ],
+            "correctIndex": 1,
+            "explanation": "A function-scoped driver fixture creates a brand-new browser session per test and tears it down afterward, so no state (cookies, open tabs, storage) can leak from one test into the next."
+          },
+          "duration": "10 min"
+        },
+        {
+          "title": "Screenshot & Video Capture on Failure",
+          "description": "Automatically preserve visual evidence when a UI test fails.",
+          "content_markdown": "## Hooking into Pytest's Failure Reporting\n\n```python\n# conftest.py\nimport pytest\n\n@pytest.hookimpl(tryfirst=True, hookwrapper=True)\ndef pytest_runtest_makereport(item, call):\n    outcome = yield\n    rep = outcome.get_result()\n    setattr(item, f\"rep_{rep.when}\", rep)\n\n@pytest.fixture(autouse=True)\ndef screenshot_on_failure(request, driver):\n    yield\n    if request.node.rep_call.failed:\n        driver.save_screenshot(f\"failures/{request.node.name}.png\")\n```\n\nThis pattern (a pytest hook plus an `autouse` fixture) captures a screenshot **automatically** for every failing UI test, with zero extra code needed in the test functions themselves — set it up once in `conftest.py` and every future UI test benefits.",
+          "starter_code": "@pytest.fixture(autouse=True)\ndef screenshot_on_failure(request, driver):\n    yield\n    if request.node.rep_call.failed:\n        driver.save_screenshot(f\"failures/{request.node.name}.png\")\n",
+          "duration": "9 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 5: Data, Mocking & Test Design",
+      "lessons": [
+        {
+          "title": "Mocking External Services",
+          "description": "Test code that depends on external APIs without calling them for real.",
+          "content_markdown": "## `unittest.mock`\n\n```python\nfrom unittest.mock import patch\n\ndef test_send_welcome_email(mocker):\n    with patch(\"myapp.email.send\") as mock_send:\n        register_user(\"qa@zaka.dev\")\n        mock_send.assert_called_once_with(\n            to=\"qa@zaka.dev\", template=\"welcome\"\n        )\n```\n\n## Mocking HTTP with `responses`\n\n```python\nimport responses\n\n@responses.activate\ndef test_weather_lookup():\n    responses.add(\n        responses.GET, \"https://api.weather.com/current\",\n        json={\"temp\": 72, \"condition\": \"sunny\"}, status=200\n    )\n    result = get_current_weather(\"San Francisco\")\n    assert result[\"temp\"] == 72\n```\n\nMocking lets you test your code's behavior in response to a *specific* external condition (a timeout, a 500 error, a malformed payload) without needing the real service to actually be in that state — often impossible or impractical to trigger for real.",
+          "starter_code": "import responses\n\n@responses.activate\ndef test_weather_lookup():\n    responses.add(\n        responses.GET, \"https://api.weather.com/current\",\n        json={\"temp\": 72, \"condition\": \"sunny\"}, status=200\n    )\n    result = get_current_weather(\"San Francisco\")\n    assert result[\"temp\"] == 72\n",
+          "quiz_data": {
+            "id": "py-m5-l1-q1",
+            "type": "multiple-choice",
+            "question": "What is the main advantage of mocking an external API's error response instead of trying to trigger a real error?",
+            "options": [
+              "Mocking is required by pytest",
+              "It lets you deterministically test how your code handles a specific condition (timeout, 500 error) that would be impractical to trigger for real",
+              "It makes the real API faster",
+              "It removes the need for assertions"
+            ],
+            "correctIndex": 1,
+            "explanation": "Real external services rarely let you reliably trigger a specific failure mode on demand; mocking makes edge-case testing deterministic and fast."
+          },
+          "duration": "10 min"
+        },
+        {
+          "title": "Test Data Management & Factories",
+          "description": "Stop hand-writing repetitive test data dictionaries.",
+          "content_markdown": "## The Problem with Hardcoded Fixtures\n\n```python\n# Repetitive and brittle — every test redefines similar data\ndef test_a():\n    user = {\"email\": \"a@test.com\", \"role\": \"student\", \"plan\": \"free\"}\n\ndef test_b():\n    user = {\"email\": \"b@test.com\", \"role\": \"student\", \"plan\": \"free\"}\n```\n\n## `factory_boy`\n\n```python\nimport factory\n\nclass UserFactory(factory.Factory):\n    class Meta:\n        model = dict\n\n    email = factory.Sequence(lambda n: f\"user{n}@test.com\")\n    role = \"student\"\n    plan = \"free\"\n\n# Usage\ndefault_user = UserFactory()\nadmin_user = UserFactory(role=\"admin\")\nbatch_of_users = UserFactory.create_batch(10)\n```\n\nFactories give you sensible defaults for every field, with the ability to override only what a specific test actually cares about — dramatically reducing test data boilerplate as a suite grows past a handful of tests.",
+          "starter_code": "import factory\n\nclass UserFactory(factory.Factory):\n    class Meta:\n        model = dict\n\n    email = factory.Sequence(lambda n: f\"user{n}@test.com\")\n    role = \"student\"\n    plan = \"free\"\n\nadmin_user = UserFactory(role=\"admin\")\nprint(admin_user)\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "Writing Maintainable, Readable Test Code",
+          "description": "The style conventions that separate professional test code from scripts.",
+          "content_markdown": "## What Separates a Script from a Test Suite\n\n- **PEP 8** — consistent formatting (use `black` or `ruff format` to enforce it automatically, don't debate it manually)\n- **Type hints** — even in test code, they catch mistakes early and document intent\n- **One assertion concept per test** — a test named `test_login` that also silently checks profile data, navigation, and analytics events is really three tests wearing one name\n- **Descriptive test names** — `test_login_fails_with_wrong_password`, not `test_login_2`\n\n```python\ndef build_test_user(role: str = \"student\", verified: bool = True) -> dict[str, str | bool]:\n    return {\"email\": f\"test-{role}@example.com\", \"role\": role, \"verified\": verified}\n```\n\nTest code is production code — it will be read, debugged, and modified far more often than it's written. Treating it as disposable is exactly how a suite becomes unmaintainable within a year.",
+          "starter_code": "def build_test_user(role: str = \"student\", verified: bool = True) -> dict:\n    return {\"email\": f\"test-{role}@example.com\", \"role\": role, \"verified\": verified}\n",
+          "duration": "8 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 6: CI/CD & Capstone",
+      "lessons": [
+        {
+          "title": "Running Pytest in GitHub Actions",
+          "description": "Wire your suite into a real automated pipeline.",
+          "content_markdown": "## A Complete Workflow\n\n```yaml\nname: Python QA Suite\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: { python-version: '3.12' }\n      - run: pip install -r requirements.txt\n      - run: pip install pytest-html\n      - run: pytest -m smoke --html=report.html --self-contained-html\n      - uses: actions/upload-artifact@v4\n        if: always()\n        with:\n          name: test-report\n          path: report.html\n```\n\nRunning only `-m smoke` on every push (fast feedback) while a separate nightly workflow runs the full `-m regression` suite is the standard pattern for keeping CI fast without sacrificing coverage.",
+          "starter_code": "name: Python QA Suite\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: { python-version: '3.12' }\n      - run: pip install -r requirements.txt\n      - run: pytest -m smoke\n",
+          "duration": "9 min"
+        },
+        {
+          "title": "Generating Reports with pytest-html and Allure",
+          "description": "Turn raw pass/fail output into something stakeholders can actually read.",
+          "content_markdown": "## pytest-html\n\n```bash\npip install pytest-html\npytest --html=report.html --self-contained-html\n```\nProduces a single, shareable HTML file with pass/fail breakdown, timing, and captured output per test.\n\n## Allure (richer, industry-standard)\n\n```bash\npip install allure-pytest\npytest --alluredir=allure-results\nallure serve allure-results\n```\n\nAllure adds step-by-step breakdowns, screenshots attached inline, historical trend graphs across runs, and severity/tagging — the report format most commonly expected in professional QA teams for stakeholder-facing test results, not just pass/fail counts.",
+          "starter_code": "# pip install allure-pytest\n# pytest --alluredir=allure-results\n# allure serve allure-results\n\nimport allure\n\n@allure.step(\"Log in as a test user\")\ndef login(driver, email, password):\n    ...\n",
+          "quiz_data": {
+            "id": "py-m6-l2-q1",
+            "type": "multiple-choice",
+            "question": "What does Allure add beyond a basic pytest-html report?",
+            "options": [
+              "It runs tests faster",
+              "Step-by-step breakdowns, inline screenshots, and historical trend graphs across multiple runs",
+              "It replaces the need for assertions",
+              "It only works with Selenium, not API tests"
+            ],
+            "correctIndex": 1,
+            "explanation": "Allure provides a richer, more stakeholder-friendly report format with per-step detail, attachments, and trend history — beyond a simple per-test pass/fail listing."
+          },
+          "duration": "8 min"
+        },
+        {
+          "title": "Capstone: Full API + UI Test Suite",
+          "description": "Combine everything from this course into one real project.",
+          "content_markdown": "## Capstone Brief\n\nBuild a suite for a demo course platform covering:\n\n1. **API layer**: authenticate via a fixture, test course listing/enrollment endpoints with schema validation\n2. **UI layer**: Page Object Model for Login and Dashboard, verifying enrolled courses render correctly\n3. **Data**: use `factory_boy` for test user generation, `responses` to mock a flaky third-party payment webhook\n4. **Markers**: tag fast API tests as `smoke`, UI tests as `regression`\n5. **CI**: GitHub Actions running smoke tests on every push, with an HTML report artifact\n\n```python\nclass TestEnrollmentFlow:\n    def test_enroll_via_api_reflects_in_dashboard(self, api_client, auth_token, driver):\n        # API: enroll the user\n        response = api_client.post(\n            \"/enrollments\",\n            json={\"course_id\": \"playwright-automation\"},\n            headers={\"Authorization\": f\"Bearer {auth_token}\"}\n        )\n        assert response.status_code == 201\n\n        # UI: verify it shows up\n        dashboard = DashboardPage(driver).load()\n        assert \"Playwright\" in \" \".join(dashboard.enrolled_course_titles())\n```\n\nThis is a realistic pattern real QA engineers use daily: seed/verify state fast via the API layer, and reserve slower UI automation for confirming what a real user actually sees.",
+          "starter_code": "class TestEnrollmentFlow:\n    def test_enroll_via_api_reflects_in_dashboard(self, api_client, auth_token, driver):\n        response = api_client.post(\n            \"/enrollments\",\n            json={\"course_id\": \"playwright-automation\"},\n            headers={\"Authorization\": f\"Bearer {auth_token}\"}\n        )\n        assert response.status_code == 201\n\n        dashboard = DashboardPage(driver).load()\n        assert \"Playwright\" in \" \".join(dashboard.enrolled_course_titles())\n",
+          "duration": "25 min"
+        },
+        {
+          "title": "Capstone Knowledge Check",
+          "description": "Final review covering the full course.",
+          "content_markdown": "## Final Review\n\nMake sure you can confidently explain:\n\n- Why virtual environments matter for avoiding \"works on my machine\" CI failures\n- How `@pytest.mark.parametrize` reduces test-writing effort versus hand-written duplicate tests\n- The difference between `function` and `session` fixture scope, and when each is correct\n- Why API tests should carry more of your coverage than UI tests where possible\n- When mocking an external service is the right call versus hitting it for real\n\nIf these all feel solid, you've built the full-stack QA engineering foundation this course promised — not just \"Python syntax,\" but the actual toolkit (pytest, requests, Selenium bindings, mocking, CI) used by real automation engineers.",
+          "starter_code": "# Reflection exercise — no code required.\n# Sketch the fixture structure (conftest.py) you'd build for a real project:\n# what's session-scoped, what's function-scoped, and why.\n",
+          "quiz_data": {
+            "id": "py-m6-l4-q1",
+            "type": "multiple-choice",
+            "question": "In the layered testing approach this course teaches, why seed/verify state via the API when possible instead of always driving the UI?",
+            "options": [
+              "UI tests are being removed from the industry",
+              "API calls are faster and more reliable for setup/verification, reserving slower UI automation for what can only be confirmed visually",
+              "The API is the only thing that can be tested",
+              "UI tests cannot use fixtures"
+            ],
+            "correctIndex": 1,
+            "explanation": "This is the standard 'test pyramid' reasoning: push as much verification as possible to the fast, reliable API layer, and use UI automation only for what genuinely requires rendering a real browser."
+          },
+          "duration": "10 min"
+        }
+      ]
+    }
+  ]
+}

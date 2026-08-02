@@ -457,10 +457,42 @@ export async function getRealAdminStats(monthsBack: number | 'all' = 6) {
 
   // --- Learning Progress (Module Completion) ---
   // For each module, we want: Completed Lessons, Incomplete Lessons
+  //
+  // This aggregates modules across every course at once, so a short label
+  // needs to disambiguate which course a module belongs to — "M1" alone
+  // collides across all 4 courses, each of which has its own "Module 1".
+  const COURSE_SHORT_CODES: Record<string, string> = {
+    python: 'PY',
+    selenium: 'SEL',
+    playwright: 'PW',
+    appium: 'APM',
+  };
+
+  const shortCourseCode = (title: string) => {
+    const key = Object.keys(COURSE_SHORT_CODES).find(k => title.toLowerCase().includes(k));
+    return key ? COURSE_SHORT_CODES[key] : title.slice(0, 3).toUpperCase();
+  };
+
+  // Chart axis space is tight even before multiplying by 4 courses' worth of
+  // modules, so the label drops the descriptive suffix entirely ("Module 5:
+  // Visual Testing, Debugging & CI" -> "PW M5") — the full title is still
+  // available via the tooltip data if ever needed.
+  const shortModuleNumber = (title: string) => {
+    const match = title.match(/Module\s*(\d+)/i);
+    return match ? `M${match[1]}` : title.slice(0, 10);
+  };
+
   const moduleStatsMap: Record<string, { title: string; completed: number; total: number }> = {};
-  
-  safeModules.forEach(m => {
-    moduleStatsMap[m.id] = { title: m.title.replace('Module ', 'M'), completed: 0, total: 0 };
+
+  safeModules.forEach((m: any) => {
+    const course = safeCourses.find((c: any) => c.id === m.course_id);
+    const courseCode = course ? shortCourseCode(course.title) : '';
+    const shortTitle = shortModuleNumber(m.title);
+    moduleStatsMap[m.id] = {
+      title: courseCode ? `${courseCode} ${shortTitle}` : shortTitle,
+      completed: 0,
+      total: 0,
+    };
   });
 
   safeLessons.forEach(l => {

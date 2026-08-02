@@ -1,0 +1,295 @@
+{
+  "slug": "cinematography-masterclass",
+  "title": "Software Engineering: Selenium Automation",
+  "description": "Master Selenium 4 for real-world browser automation — W3C WebDriver, relative locators, Grid 4, CDP/BiDi integration, and production CI/CD pipelines.",
+  "thumbnail_url": "",
+  "modules": [
+    {
+      "title": "Module 1: Modern Selenium Foundations",
+      "lessons": [
+        {
+          "title": "What Selenium 4 Actually Is",
+          "description": "Understand the W3C WebDriver standard that powers modern Selenium.",
+          "content_markdown": "## Selenium 4: A Standards-Based Rewrite\n\nSelenium 4 isn't just a version bump — it's built entirely on the **W3C WebDriver protocol**, the same standard browser vendors (Chrome, Firefox, Safari, Edge) implement natively. Earlier Selenium versions used a legacy JSON Wire Protocol that each browser vendor had to translate; W3C WebDriver removed that translation layer entirely, which is why Selenium 4 is markedly more stable across browsers than Selenium 3 was.\n\n### The architecture\n```\nYour Test Code\n      │  W3C WebDriver protocol (HTTP/JSON)\n      ▼\nWebDriver (ChromeDriver / GeckoDriver / msedgedriver)\n      │  native browser automation APIs\n      ▼\nReal Browser\n```\n\nSince this is the same protocol Appium and Playwright's compatibility layers speak, understanding it here transfers directly to other tools — this is the actual lingua franca of browser (and mobile) automation in 2026, not a Selenium-specific quirk.",
+          "starter_code": "// Selenium 4 uses the same protocol natively supported by every major browser —\n// no more vendor-specific JSON Wire Protocol translation.\n",
+          "quiz_data": {
+            "id": "sel-m1-l1-q1",
+            "type": "multiple-choice",
+            "question": "Why is Selenium 4 more stable across different browsers than Selenium 3?",
+            "options": [
+              "It only supports Chrome now",
+              "It communicates via the W3C WebDriver standard that browsers implement natively, removing a translation layer",
+              "It no longer requires a driver executable",
+              "It uses a completely different programming language"
+            ],
+            "correctIndex": 1,
+            "explanation": "Selenium 3 relied on a legacy JSON Wire Protocol that had to be translated per-browser; Selenium 4 speaks the W3C standard directly, which browser vendors implement themselves."
+          },
+          "duration": "8 min"
+        },
+        {
+          "title": "Selenium Manager: No More Manual Driver Downloads",
+          "description": "Set up a project without ever touching a driver binary yourself.",
+          "content_markdown": "## The Old Pain\n\nFor years, Selenium users manually downloaded `chromedriver`/`geckodriver`, matched it to their exact browser version, and fixed PATH issues whenever the browser auto-updated and broke everything. This was the single biggest source of Selenium setup frustration.\n\n## Selenium Manager (built into Selenium 4.6+)\n\n```java\n// Java — no driver path needed at all\nWebDriver driver = new ChromeDriver();\n```\n```python\n# Python — same story\nfrom selenium import webdriver\ndriver = webdriver.Chrome()\n```\n\nSelenium Manager automatically detects your installed browser version, downloads the matching driver, and caches it — completely eliminating the classic \"driver version mismatch\" error that used to eat hours of setup time.",
+          "starter_code": "from selenium import webdriver\n\n# Selenium Manager handles the driver automatically\ndriver = webdriver.Chrome()\ndriver.get('https://example.com')\nprint(driver.title)\ndriver.quit()\n",
+          "duration": "7 min"
+        },
+        {
+          "title": "Your First Test: The WebDriver Session Lifecycle",
+          "description": "Understand what actually happens when you create and quit a driver.",
+          "content_markdown": "## Session Lifecycle\n\n```python\nfrom selenium import webdriver\nfrom selenium.webdriver.common.by import By\n\ndriver = webdriver.Chrome()          # 1. Start a new browser session\ntry:\n    driver.get('https://example.com') # 2. Navigate\n    heading = driver.find_element(By.TAG_NAME, 'h1')\n    assert heading.text == 'Example Domain'\nfinally:\n    driver.quit()                     # 3. Always clean up the session\n```\n\n### `quit()` vs `close()`\n- `driver.close()` closes the **current window/tab** — if it's the last one, the session ends\n- `driver.quit()` closes **all windows** and ends the WebDriver session/process entirely\n\nAlways use `quit()` in teardown (a `finally` block or pytest fixture), never `close()` — a leaked WebDriver process on a CI runner will eventually exhaust memory across a long test run.",
+          "starter_code": "from selenium import webdriver\nfrom selenium.webdriver.common.by import By\n\ndriver = webdriver.Chrome()\ntry:\n    driver.get('https://example.com')\n    heading = driver.find_element(By.TAG_NAME, 'h1')\n    assert heading.text == 'Example Domain'\nfinally:\n    driver.quit()\n",
+          "quiz_data": {
+            "id": "sel-m1-l3-q1",
+            "type": "multiple-choice",
+            "question": "Why should test teardown always call driver.quit() instead of driver.close()?",
+            "options": [
+              "close() is deprecated and throws an error",
+              "quit() ends the entire WebDriver session and closes all windows, preventing leaked browser processes",
+              "close() only works in headless mode",
+              "There is no difference between them"
+            ],
+            "correctIndex": 1,
+            "explanation": "close() only closes the current window; quit() terminates the whole session. Using close() in teardown can leak WebDriver processes across a long CI run."
+          },
+          "duration": "9 min"
+        },
+        {
+          "title": "Relative Locators: Selenium 4's Human-Friendly Selectors",
+          "description": "Find elements by their visual relationship to each other, not just by attributes.",
+          "content_markdown": "## \"Find the field near this label\"\n\nSelenium 4 introduced **relative locators**, letting you locate elements the way a human would describe them — relative to another known element — instead of relying purely on IDs, classes, or XPath ancestry.\n\n```python\nfrom selenium.webdriver.support.relative_locator import locate_with\nfrom selenium.webdriver.common.by import By\n\nemail_label = driver.find_element(By.XPATH, \"//label[text()='Email']\")\nemail_input = driver.find_element(locate_with(By.TAG_NAME, 'input').below(email_label))\n\nsubmit_btn = driver.find_element(locate_with(By.TAG_NAME, 'button').near(email_input))\n```\n\nAvailable relations: `.above()`, `.below()`, `.to_left_of()`, `.to_right_of()`, `.near()`.\n\n### When to use them\nGreat for legacy forms/UIs with no stable IDs or test attributes. **Not** a replacement for `data-testid` attributes when you control the codebase — explicit test IDs are still more reliable and faster to resolve than relative geometry.",
+          "starter_code": "from selenium.webdriver.support.relative_locator import locate_with\nfrom selenium.webdriver.common.by import By\n\nemail_label = driver.find_element(By.XPATH, \"//label[text()='Email']\")\nemail_input = driver.find_element(locate_with(By.TAG_NAME, 'input').below(email_label))\nemail_input.send_keys('qa@zaka.dev')\n",
+          "duration": "10 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 2: Waits, Actions & Robust Interactions",
+      "lessons": [
+        {
+          "title": "Explicit Waits vs. the Implicit Wait Trap",
+          "description": "Understand why implicit waits are discouraged in modern Selenium.",
+          "content_markdown": "## The Implicit Wait Problem\n\n```python\ndriver.implicitly_wait(10)  # applies globally to every find_element call\n```\n\nThis sounds convenient but causes two real problems:\n1. **Mixing implicit and explicit waits** causes unpredictable, inconsistent timeouts that are notoriously hard to debug\n2. It waits for **presence**, not **actionability** — an element can exist in the DOM while still being invisible, disabled, or covered, causing `ElementNotInteractableException` even after the 'wait' passes\n\n## Explicit Waits (the correct default)\n\n```python\nfrom selenium.webdriver.support.ui import WebDriverWait\nfrom selenium.webdriver.support import expected_conditions as EC\nfrom selenium.webdriver.common.by import By\n\nwait = WebDriverWait(driver, 10)\nbutton = wait.until(EC.element_to_be_clickable((By.ID, 'submit')))\nbutton.click()\n```\n\n`expected_conditions` has dozens of built-in conditions (`visibility_of_element_located`, `text_to_be_present_in_element`, `element_to_be_clickable`) — pick the one that actually matches what you're about to do, not just \"does it exist.\"",
+          "starter_code": "from selenium.webdriver.support.ui import WebDriverWait\nfrom selenium.webdriver.support import expected_conditions as EC\nfrom selenium.webdriver.common.by import By\n\nwait = WebDriverWait(driver, 10)\nbutton = wait.until(EC.element_to_be_clickable((By.ID, 'submit')))\nbutton.click()\n",
+          "quiz_data": {
+            "id": "sel-m2-l1-q1",
+            "type": "multiple-choice",
+            "question": "Why is mixing implicit and explicit waits in the same test discouraged?",
+            "options": [
+              "It causes a syntax error",
+              "It produces unpredictable, inconsistent effective timeouts that are hard to debug",
+              "Implicit waits are removed in Selenium 4",
+              "It only affects Firefox"
+            ],
+            "correctIndex": 1,
+            "explanation": "The two wait mechanisms interact in non-obvious ways when combined, producing effective wait times that don't match either configured value — a well-documented source of Selenium flakiness."
+          },
+          "duration": "10 min"
+        },
+        {
+          "title": "The Actions API: Gestures, Drag-and-Drop & Keyboard",
+          "description": "Simulate complex, multi-step user interactions.",
+          "content_markdown": "## Beyond click() and send_keys()\n\nThe `ActionChains` API composes low-level mouse/keyboard events into complex gestures:\n\n```python\nfrom selenium.webdriver.common.action_chains import ActionChains\nfrom selenium.webdriver.common.keys import Keys\n\nactions = ActionChains(driver)\n\n# Drag and drop\nactions.drag_and_drop(source_element, target_element).perform()\n\n# Hover then click a revealed menu item\nactions.move_to_element(menu_trigger).pause(0.3).click(submenu_item).perform()\n\n# Keyboard shortcut (Ctrl+A, then type)\nactions.key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).send_keys('replacement text').perform()\n```\n\nEach call queues an action; nothing happens until `.perform()` executes the whole sequence — this matters because it lets you build a precise, deliberate interaction script instead of hoping individual clicks land in the right order.",
+          "starter_code": "from selenium.webdriver.common.action_chains import ActionChains\n\nactions = ActionChains(driver)\nactions.drag_and_drop(source_element, target_element).perform()\n",
+          "duration": "11 min"
+        },
+        {
+          "title": "Handling Alerts, Frames & Multiple Windows",
+          "description": "Navigate the browser contexts that trip up most beginners.",
+          "content_markdown": "## Native Alerts\n```python\nalert = driver.switch_to.alert\nprint(alert.text)\nalert.accept()   # or alert.dismiss()\n```\n\n## iframes\n```python\ndriver.switch_to.frame('payment-frame')\ndriver.find_element(By.ID, 'card-number').send_keys('4242424242424242')\ndriver.switch_to.default_content()  # back to the main page\n```\n\n## Multiple Windows/Tabs\n```python\noriginal_window = driver.current_window_handle\ndriver.find_element(By.LINK_TEXT, 'Open in new tab').click()\n\nfor handle in driver.window_handles:\n    if handle != original_window:\n        driver.switch_to.window(handle)\n        break\n\n# ... interact with the new tab ...\ndriver.close()\ndriver.switch_to.window(original_window)\n```\n\nForgetting to switch back to `default_content()` or the original window is one of the most common causes of \"element not found\" errors right after a frame/tab interaction — Selenium keeps looking in whatever context you last switched to.",
+          "starter_code": "original_window = driver.current_window_handle\ndriver.find_element(By.LINK_TEXT, 'Open in new tab').click()\n\nfor handle in driver.window_handles:\n    if handle != original_window:\n        driver.switch_to.window(handle)\n        break\n\ndriver.close()\ndriver.switch_to.window(original_window)\n",
+          "quiz_data": {
+            "id": "sel-m2-l3-q1",
+            "type": "multiple-choice",
+            "question": "What is a common cause of 'element not found' errors right after interacting with an iframe?",
+            "options": [
+              "The iframe was deleted",
+              "Forgetting to call driver.switch_to.default_content() to return to the main page context",
+              "iframes are not supported in Selenium 4",
+              "The element was never visible"
+            ],
+            "correctIndex": 1,
+            "explanation": "Selenium continues searching within whatever frame context you last switched into; forgetting to switch back to default_content() means subsequent find_element calls look in the wrong document."
+          },
+          "duration": "10 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 3: Architecture & Maintainability",
+      "lessons": [
+        {
+          "title": "Page Object Model, Done Right",
+          "description": "Structure a test suite that survives real-world UI changes.",
+          "content_markdown": "## The Pattern\n\n```python\nclass LoginPage:\n    def __init__(self, driver):\n        self.driver = driver\n        self.email_input = (By.ID, 'email')\n        self.password_input = (By.ID, 'password')\n        self.submit_button = (By.ID, 'submit')\n\n    def load(self):\n        self.driver.get('https://app.example.com/login')\n\n    def login(self, email, password):\n        self.driver.find_element(*self.email_input).send_keys(email)\n        self.driver.find_element(*self.password_input).send_keys(password)\n        self.driver.find_element(*self.submit_button).click()\n```\n\nTests then read like plain English and never reference raw selectors:\n```python\ndef test_valid_login(driver):\n    login_page = LoginPage(driver)\n    login_page.load()\n    login_page.login('qa@zaka.dev', 'Secure123!')\n    assert 'dashboard' in driver.current_url\n```\n\nWhen the login form's HTML changes, you update `LoginPage` in exactly one place — every test that logs in benefits automatically.",
+          "starter_code": "class LoginPage:\n    def __init__(self, driver):\n        self.driver = driver\n        self.email_input = (By.ID, 'email')\n        self.password_input = (By.ID, 'password')\n        self.submit_button = (By.ID, 'submit')\n\n    def login(self, email, password):\n        self.driver.find_element(*self.email_input).send_keys(email)\n        self.driver.find_element(*self.password_input).send_keys(password)\n        self.driver.find_element(*self.submit_button).click()\n",
+          "duration": "12 min"
+        },
+        {
+          "title": "Data-Driven Testing with Pytest Parametrization",
+          "description": "Run the same test logic against many inputs without copy-pasting.",
+          "content_markdown": "## `@pytest.mark.parametrize`\n\n```python\nimport pytest\n\n@pytest.mark.parametrize('email,password,expected_error', [\n    ('', 'Secure123!', 'Email is required'),\n    ('bad-email', 'Secure123!', 'Enter a valid email'),\n    ('qa@zaka.dev', '', 'Password is required'),\n])\ndef test_login_validation(driver, email, password, expected_error):\n    login_page = LoginPage(driver)\n    login_page.load()\n    login_page.login(email, password)\n    error = driver.find_element(By.CLASS_NAME, 'error-message')\n    assert expected_error in error.text\n```\n\nThis generates three independent test cases from one function — each shows up separately in your test report, and a failure in one doesn't hide failures in the others (unlike a hand-rolled `for` loop inside a single test).",
+          "starter_code": "import pytest\n\n@pytest.mark.parametrize('email,password,expected_error', [\n    ('', 'Secure123!', 'Email is required'),\n    ('bad-email', 'Secure123!', 'Enter a valid email'),\n])\ndef test_login_validation(driver, email, password, expected_error):\n    login_page = LoginPage(driver)\n    login_page.load()\n    login_page.login(email, password)\n    error = driver.find_element(By.CLASS_NAME, 'error-message')\n    assert expected_error in error.text\n",
+          "quiz_data": {
+            "id": "sel-m3-l2-q1",
+            "type": "multiple-choice",
+            "question": "Why is @pytest.mark.parametrize preferred over a manual for-loop inside one test function?",
+            "options": [
+              "It runs faster",
+              "Each parameter set becomes its own independent, separately-reported test case, so one failure doesn't mask others",
+              "It's the only way to use variables in pytest",
+              "It automatically fixes failing assertions"
+            ],
+            "correctIndex": 1,
+            "explanation": "Parametrization generates distinct test cases visible individually in reports; a for-loop inside one test stops at the first failed assertion and hides results for remaining inputs."
+          },
+          "duration": "9 min"
+        },
+        {
+          "title": "Custom Wait Conditions & Fluent Waits",
+          "description": "Write your own expected_condition when the built-ins don't fit.",
+          "content_markdown": "## Beyond the Built-Ins\n\nSometimes no built-in `expected_condition` matches what you need. Write your own as a callable:\n\n```python\nclass element_has_css_class:\n    def __init__(self, locator, css_class):\n        self.locator = locator\n        self.css_class = css_class\n\n    def __call__(self, driver):\n        element = driver.find_element(*self.locator)\n        return self.css_class in element.get_attribute('class')\n\nwait.until(element_has_css_class((By.ID, 'save-button'), 'is-saved'))\n```\n\n## Fluent Wait\n\nA `WebDriverWait` with custom polling frequency and ignored exceptions:\n```python\nfrom selenium.common.exceptions import NoSuchElementException\n\nfluent_wait = WebDriverWait(\n    driver, timeout=15, poll_frequency=0.5,\n    ignored_exceptions=[NoSuchElementException]\n)\nfluent_wait.until(lambda d: d.find_element(By.ID, 'result').is_displayed())\n```\n\nUse a custom polling interval when the default 500ms is either too slow (fast-updating UI) or wastefully frequent (an operation you know takes several seconds).",
+          "starter_code": "class element_has_css_class:\n    def __init__(self, locator, css_class):\n        self.locator = locator\n        self.css_class = css_class\n\n    def __call__(self, driver):\n        element = driver.find_element(*self.locator)\n        return self.css_class in element.get_attribute('class')\n\nwait.until(element_has_css_class((By.ID, 'save-button'), 'is-saved'))\n",
+          "duration": "11 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 4: Selenium Grid & Scaling",
+      "lessons": [
+        {
+          "title": "Selenium Grid 4 Architecture",
+          "description": "Understand the distributed model that replaced the old Hub/Node setup.",
+          "content_markdown": "## From Hub/Node to Fully Distributed\n\nSelenium Grid 4 was rearchitected around four independent components that can run standalone or distributed: the **Router**, **Distributor**, **Session Map**, and **Node**. In practice, most teams use Grid in one of two modes:\n\n- **Standalone**: everything in one process — fine for local testing\n- **Fully distributed**: components scaled independently across machines — used for real CI fleets\n\n```bash\n# Standalone mode (single command, good for local/small CI)\njava -jar selenium-server-4.jar standalone\n```\n\nTests connect to the Grid exactly the same way regardless of mode — you just change the `command_executor` URL:\n```python\nfrom selenium.webdriver.common.desired_capabilities import DesiredCapabilities\n\ndriver = webdriver.Remote(\n    command_executor='http://localhost:4444/wd/hub',\n    options=webdriver.ChromeOptions()\n)\n```",
+          "starter_code": "driver = webdriver.Remote(\n    command_executor='http://localhost:4444/wd/hub',\n    options=webdriver.ChromeOptions()\n)\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "Running Grid via Docker Compose",
+          "description": "Stand up a real multi-browser Grid without installing anything locally.",
+          "content_markdown": "## Docker-Based Grid\n\nSelenium publishes official Docker images for exactly this — no local Java/browser driver installation needed at all.\n\n```yaml\n# docker-compose.yml\nservices:\n  selenium-hub:\n    image: selenium/hub:4.20\n    ports: ['4442:4442', '4443:4443', '4444:4444']\n\n  chrome:\n    image: selenium/node-chrome:4.20\n    depends_on: [selenium-hub]\n    environment:\n      - SE_EVENT_BUS_HOST=selenium-hub\n      - SE_EVENT_BUS_PUBLISH_PORT=4442\n      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443\n\n  firefox:\n    image: selenium/node-firefox:4.20\n    depends_on: [selenium-hub]\n    environment:\n      - SE_EVENT_BUS_HOST=selenium-hub\n      - SE_EVENT_BUS_PUBLISH_PORT=4442\n      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443\n```\n\n```bash\ndocker compose up -d\n# Grid console: http://localhost:4444/ui\n```\n\nThis is the most common way real teams run cross-browser Grid today — reproducible, disposable, and identical between a developer's laptop and CI.",
+          "starter_code": "# docker-compose.yml (simplified)\n# services:\n#   selenium-hub:\n#     image: selenium/hub:4.20\n#   chrome:\n#     image: selenium/node-chrome:4.20\n#     depends_on: [selenium-hub]\n\n# docker compose up -d\n",
+          "quiz_data": {
+            "id": "sel-m4-l2-q1",
+            "type": "multiple-choice",
+            "question": "What is the main advantage of running Selenium Grid via Docker Compose?",
+            "options": [
+              "It's the only way to use more than one browser",
+              "It gives a reproducible, disposable Grid setup that's identical across a developer's machine and CI",
+              "It makes tests run without any code changes",
+              "It removes the need for WebDriver entirely"
+            ],
+            "correctIndex": 1,
+            "explanation": "Docker images bundle the exact browser + driver versions, so the Grid environment is consistent everywhere it runs — a major source of 'works on my machine' Grid issues is eliminated."
+          },
+          "duration": "12 min"
+        },
+        {
+          "title": "Cloud Execution: BrowserStack & Sauce Labs",
+          "description": "Scale beyond your own infrastructure using real device/browser clouds.",
+          "content_markdown": "## Pointing at a Cloud Grid\n\nCloud providers expose a Selenium-compatible Grid endpoint — your test code barely changes, only the capabilities and remote URL:\n\n```python\nimport os\n\noptions = webdriver.ChromeOptions()\noptions.set_capability('bstack:options', {\n    'os': 'Windows', 'osVersion': '11',\n    'browserVersion': 'latest',\n    'userName': os.environ['BROWSERSTACK_USERNAME'],\n    'accessKey': os.environ['BROWSERSTACK_ACCESS_KEY'],\n})\n\ndriver = webdriver.Remote(\n    command_executor='https://hub-cloud.browserstack.com/wd/hub',\n    options=options\n)\n```\n\nThis is the same pattern used across the industry: local Grid for fast feedback during development, cloud Grid for the full real-device/browser matrix in CI before a release.",
+          "starter_code": "options = webdriver.ChromeOptions()\noptions.set_capability('bstack:options', {\n    'os': 'Windows', 'osVersion': '11', 'browserVersion': 'latest',\n})\n\ndriver = webdriver.Remote(\n    command_executor='https://hub-cloud.browserstack.com/wd/hub',\n    options=options\n)\n",
+          "duration": "9 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 5: Modern Selenium Features & DevTools",
+      "lessons": [
+        {
+          "title": "Chrome DevTools Protocol (CDP) Integration",
+          "description": "Intercept network traffic and capture console logs directly from Selenium.",
+          "content_markdown": "## Beyond WebDriver: CDP Access\n\nSelenium 4 exposes Chromium's DevTools Protocol directly, letting you do things plain WebDriver never could:\n\n```python\nfrom selenium.webdriver.common.bidi.network import Network\n\ndriver = webdriver.Chrome()\ndevtools = driver.execute_cdp_cmd\n\n# Simulate offline network\ndriver.execute_cdp_cmd('Network.enable', {})\ndriver.execute_cdp_cmd('Network.emulateNetworkConditions', {\n    'offline': True, 'latency': 0, 'downloadThroughput': 0, 'uploadThroughput': 0\n})\n\n# Capture console messages\ndriver.execute_cdp_cmd('Runtime.enable', {})\nlogs = driver.get_log('browser')\n```\n\nThis unlocks network condition simulation, console log capture, and performance metrics — capabilities that used to require a separate proxy tool (like BrowserMob Proxy) bolted onto Selenium.",
+          "starter_code": "driver.execute_cdp_cmd('Network.enable', {})\ndriver.execute_cdp_cmd('Network.emulateNetworkConditions', {\n    'offline': True, 'latency': 0, 'downloadThroughput': 0, 'uploadThroughput': 0\n})\n",
+          "duration": "11 min"
+        },
+        {
+          "title": "BiDi Protocol: The Future Beyond CDP",
+          "description": "Understand where Selenium's browser-communication model is heading.",
+          "content_markdown": "## Why BiDi Matters\n\nCDP integration is powerful but **Chromium-specific** — it doesn't work the same way in Firefox or Safari. The **WebDriver BiDi** (bi-directional) protocol is the W3C's cross-browser answer: a standardized way to get the same network interception, console log access, and real-time event streaming CDP offers, but working identically across all major browsers.\n\n```python\n# BiDi support is landing incrementally across Selenium bindings\nwith driver.bidi_connection() as session:\n    network = Network(driver)\n    # subscribe to network events across ANY browser, not just Chromium\n```\n\nAs of 2026, BiDi support varies by language binding and browser — check current compatibility before depending on it in production, but understand it's the direction the entire ecosystem (Selenium, Playwright, and browser vendors) is converging on.",
+          "starter_code": "# BiDi usage pattern (support varies by binding/browser — check current docs)\n# with driver.bidi_connection() as session:\n#     network = Network(driver)\n#     ...\n",
+          "quiz_data": {
+            "id": "sel-m5-l2-q1",
+            "type": "multiple-choice",
+            "question": "Why is the WebDriver BiDi protocol significant compared to CDP-based integration?",
+            "options": [
+              "It's faster than CDP in every case",
+              "It's a W3C cross-browser standard, unlike CDP which is Chromium-specific",
+              "It replaces the need for a browser driver",
+              "It only works in headless mode"
+            ],
+            "correctIndex": 1,
+            "explanation": "CDP only works with Chromium-based browsers; BiDi is being standardized across all major browsers, meaning the same interception/logging capabilities work consistently everywhere."
+          },
+          "duration": "9 min"
+        },
+        {
+          "title": "Full-Page & Element Screenshots",
+          "description": "Capture visual evidence precisely, using Selenium 4's improved API.",
+          "content_markdown": "## Element-Level Screenshots\n\n```python\n# Selenium 4: screenshot a single element, not just the viewport\nelement = driver.find_element(By.ID, 'pricing-card')\nelement.screenshot('pricing-card.png')\n```\n\n## Full-Page Screenshots\n\nStandard `driver.save_screenshot()` only captures the visible viewport. For a true full-page capture, combine with CDP:\n```python\nresult = driver.execute_cdp_cmd('Page.captureScreenshot', {'captureBeyondViewport': True})\nimport base64\nwith open('full-page.png', 'wb') as f:\n    f.write(base64.b64decode(result['data']))\n```\n\nElement-level and full-page screenshots are especially useful for **failure diagnostics** — attach them automatically in a pytest fixture's teardown so every failed test leaves visual evidence in your CI artifacts.",
+          "starter_code": "element = driver.find_element(By.ID, 'pricing-card')\nelement.screenshot('pricing-card.png')\n",
+          "duration": "8 min"
+        }
+      ]
+    },
+    {
+      "title": "Module 6: CI/CD & Capstone",
+      "lessons": [
+        {
+          "title": "Headless Execution & CI Configuration",
+          "description": "Run your Selenium suite reliably inside GitHub Actions.",
+          "content_markdown": "## Headless Chrome in CI\n\n```python\noptions = webdriver.ChromeOptions()\noptions.add_argument('--headless=new')\noptions.add_argument('--no-sandbox')\noptions.add_argument('--disable-dev-shm-usage')\ndriver = webdriver.Chrome(options=options)\n```\n\nThe last two flags matter specifically in containerized CI: `--no-sandbox` avoids a common Docker permission failure, and `--disable-dev-shm-usage` prevents Chrome from crashing when `/dev/shm` is too small (the default in many CI containers).\n\n## GitHub Actions Workflow\n```yaml\nname: Selenium Tests\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: { python-version: '3.12' }\n      - run: pip install -r requirements.txt\n      - run: pytest --html=report.html\n      - uses: actions/upload-artifact@v4\n        if: always()\n        with: { name: test-report, path: report.html }\n```",
+          "starter_code": "options = webdriver.ChromeOptions()\noptions.add_argument('--headless=new')\noptions.add_argument('--no-sandbox')\noptions.add_argument('--disable-dev-shm-usage')\ndriver = webdriver.Chrome(options=options)\n",
+          "duration": "10 min"
+        },
+        {
+          "title": "Diagnosing Flaky Tests",
+          "description": "Systematically find the real cause instead of just adding retries.",
+          "content_markdown": "## Retries Hide Problems, They Don't Fix Them\n\nA `pytest-rerunfailures` retry is a reasonable safety net, but treating it as the primary fix for flakiness just delays the same failure. Common real causes, in order of frequency:\n\n1. **Race conditions** — clicking before an async UI update finishes (fix: proper explicit waits, not more retries)\n2. **Shared test state** — tests that depend on execution order or leftover data from a previous test\n3. **Animation timing** — clicking a button mid-transition\n4. **Environment differences** — CI runs headless/smaller viewport than local, changing layout\n\n### A practical debugging checklist\n```python\n@pytest.fixture(autouse=True)\ndef screenshot_on_failure(request, driver):\n    yield\n    if request.node.rep_call.failed:\n        driver.save_screenshot(f'failures/{request.node.name}.png')\n```\nCapture screenshots (and ideally the page source) automatically on failure — guessing at flaky failures without evidence wastes far more time than the instrumentation costs.",
+          "starter_code": "@pytest.fixture(autouse=True)\ndef screenshot_on_failure(request, driver):\n    yield\n    if request.node.rep_call.failed:\n        driver.save_screenshot(f'failures/{request.node.name}.png')\n",
+          "quiz_data": {
+            "id": "sel-m6-l2-q1",
+            "type": "multiple-choice",
+            "question": "What is the main risk of using test retries as the primary strategy for handling flaky tests?",
+            "options": [
+              "Retries are not supported in pytest",
+              "It masks the real underlying cause (race conditions, shared state, timing) instead of fixing it",
+              "Retries always make tests slower with no benefit",
+              "It's impossible to configure retries in CI"
+            ],
+            "correctIndex": 1,
+            "explanation": "Retries can be a reasonable safety net, but relying on them alone means the actual root cause of flakiness (often a real race condition or bug) never gets diagnosed or fixed."
+          },
+          "duration": "11 min"
+        },
+        {
+          "title": "Capstone: E2E Suite for an E-Commerce Site",
+          "description": "Combine everything into one production-shaped test suite.",
+          "content_markdown": "## Capstone Brief\n\nBuild a suite covering:\n\n1. **Page Object Model** for Login, Product Search, and Checkout pages\n2. **Relative locators** for a legacy-style product filter sidebar with no test IDs\n3. **Explicit waits** throughout — no implicit waits\n4. **Parametrized data-driven tests** for search queries and checkout validation errors\n5. **CI integration** — headless Chrome, screenshot-on-failure, HTML report artifact\n\n```python\nclass TestCheckoutFlow:\n    def test_add_to_cart_and_checkout(self, driver):\n        search_page = SearchPage(driver)\n        search_page.load()\n        search_page.search('mechanical keyboard')\n        search_page.add_first_result_to_cart()\n\n        cart_page = CartPage(driver)\n        cart_page.load()\n        assert cart_page.item_count() == 1\n\n        checkout_page = cart_page.proceed_to_checkout()\n        checkout_page.fill_shipping_info(name='Test User', address='123 Main St')\n        checkout_page.submit_order()\n\n        assert 'Order confirmed' in driver.page_source\n```\n\nThis mirrors what a real QA engineer builds day-to-day: a maintainable page-object suite, data-driven validation coverage, and CI wired to surface failures with evidence — not a one-off script.",
+          "starter_code": "class TestCheckoutFlow:\n    def test_add_to_cart_and_checkout(self, driver):\n        search_page = SearchPage(driver)\n        search_page.load()\n        search_page.search('mechanical keyboard')\n        search_page.add_first_result_to_cart()\n\n        cart_page = CartPage(driver)\n        cart_page.load()\n        assert cart_page.item_count() == 1\n\n        checkout_page = cart_page.proceed_to_checkout()\n        checkout_page.fill_shipping_info(name='Test User', address='123 Main St')\n        checkout_page.submit_order()\n\n        assert 'Order confirmed' in driver.page_source\n",
+          "duration": "25 min"
+        },
+        {
+          "title": "Capstone Knowledge Check",
+          "description": "Final review covering the full course.",
+          "content_markdown": "## Final Review\n\nBefore moving on, make sure you can confidently answer:\n\n- Why does Selenium 4's W3C-native protocol reduce cross-browser flakiness compared to Selenium 3?\n- When are relative locators the right tool, and when is a `data-testid` still better?\n- Why is mixing implicit and explicit waits dangerous?\n- What's the actual difference Docker-based Grid makes versus a manually installed one?\n- Why should retries never be your only strategy for flaky tests?\n\nIf these all feel solid, you're ready to own a real Selenium automation strategy end-to-end — not just write individual scripts, but architect a suite that survives contact with a real, evolving product.",
+          "starter_code": "# Reflection exercise — no code required.\n# Sketch the Page Object structure you'd use for a real project you know,\n# including at least one legacy page that would need relative locators.\n",
+          "quiz_data": {
+            "id": "sel-m6-l4-q1",
+            "type": "multiple-choice",
+            "question": "What is the primary benefit of Selenium Manager introduced in Selenium 4.6+?",
+            "options": [
+              "It writes your test assertions automatically",
+              "It automatically detects the installed browser version and downloads/caches the matching driver",
+              "It replaces the need for a Page Object Model",
+              "It only works with Selenium Grid"
+            ],
+            "correctIndex": 1,
+            "explanation": "Selenium Manager eliminates the classic manual driver-download-and-version-matching workflow that used to be the most common source of Selenium setup friction."
+          },
+          "duration": "10 min"
+        }
+      ]
+    }
+  ]
+}
