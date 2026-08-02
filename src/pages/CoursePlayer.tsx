@@ -122,114 +122,88 @@ export default function CoursePlayer() {
 
   const activeModule = curriculum.find(m => m.lessons.some(l => l.id === activeLesson?.id));
 
-  /* ── Mock Execution Engine ── */
+  /* ── Mock Execution Engine ──
+   * This has never been a real interpreter — it's a scripted terminal
+   * simulation. The previous version only recognized one hardcoded lesson's
+   * exact old Selenium-RC-style syntax and treated every other lesson's code
+   * (Playwright, pytest, Appium, modern Selenium) as a failure regardless of
+   * whether it was correct, since it never matched that one pattern. This
+   * detects the general "flavor" of the submitted code instead and narrates
+   * a plausible, tool-appropriate success — actually validating arbitrary
+   * code correctness would require a real sandboxed execution backend,
+   * which is out of scope for a learning-sandbox terminal like this.
+   */
   const runMockExecution = async (code: string) => {
     setIsTerminalOpen(true);
     setIsExecuting(true);
-    
-    // Initial system log
-    setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '> node main.js' }]);
 
     const addLog = (msg: string, type: LogType = 'info') => {
       setTerminalLogs(prev => [...prev, { id: Math.random().toString(), type, message: msg }]);
     };
+    const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-    // Simulate startup delay
-    await new Promise(r => setTimeout(r, 600));
-    addLog('Initializing Selenium WebDriver...', 'info');
-    
-    await new Promise(r => setTimeout(r, 1000));
+    // Strip comments so a trivial/empty submission isn't mistaken for real code
+    const cleanCode = code.replace(/\/\*[\s\S]*?\*\/|(?:^|\s)\/\/.*|#.*$/gm, '').trim();
 
-    // Strip single-line and multi-line comments, but require space/start of line for single-line
-    // so we don't accidentally strip 'https://...' URLs!
-    const cleanCode = code.replace(/\/\*[\s\S]*?\*\/|(?:^|\s)\/\/.*/gm, '');
+    if (cleanCode.length < 10) {
+      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ run' }]);
+      await wait(300);
+      addLog('No code to run — write something in the editor first.', 'error');
+      setIsExecuting(false);
+      return;
+    }
 
-    // Split logic based on the lesson context!
-    const isLoginLesson = activeLesson?.title === 'Automated Login Test';
+    const isPlaywright = /\bpage\.(click|fill|goto|getBy)\w*\(|@playwright\/test/.test(code);
+    const isAppium = /driver\.\$\(|mobile:|appium/i.test(code);
+    const isPytest = /def test_|import pytest|assert\s/.test(code) && !/page\.|driver\./.test(code);
+    const isSelenium = /webdriver\.(Chrome|Firefox)|find_element|WebDriverWait|new Builder\(\)/.test(code);
 
-    if (isLoginLesson) {
-      // ── MOCK: Mocha Test Runner Simulation ──
-      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '> mocha login.spec.js' }]);
-      await new Promise(r => setTimeout(r, 400));
-      addLog('Running Selenium Test Suite...', 'info');
-      await new Promise(r => setTimeout(r, 600));
-
-      const hasFindElement = cleanCode.includes('findElement') || cleanCode.includes('By.id');
-      const hasSendKeys = cleanCode.includes('sendKeys');
-      const hasClick = cleanCode.includes('click()');
-
-      if (!hasFindElement || !hasSendKeys) {
-        addLog('Error: Could not locate username or password fields. Did you forget `findElement` and `sendKeys`?', 'error');
-        addLog('✖ 1 failing (800ms)', 'error');
-        setIsExecuting(false);
-        return;
-      }
-
-      addLog('Finding element: username ...', 'system');
-      await new Promise(r => setTimeout(r, 400));
-      addLog('Sending keys: "testuser" ...', 'system');
-      await new Promise(r => setTimeout(r, 400));
-      addLog('Finding element: password ...', 'system');
-      await new Promise(r => setTimeout(r, 400));
-      addLog('Sending keys: "********" ...', 'system');
-      await new Promise(r => setTimeout(r, 400));
-
-      if (!hasClick) {
-        addLog('Error: Form submission timed out. Did you forget to `click()` the submit button?', 'error');
-        addLog('✖ 1 failing (2100ms)', 'error');
-        setIsExecuting(false);
-        return;
-      }
-
-      addLog('Clicking Submit button ...', 'system');
-      await new Promise(r => setTimeout(r, 800));
-
-      addLog('✓ User Authentication Test Passed (1420ms)', 'success');
-      addLog('  1 passing (1.5s)', 'system');
-      
+    if (isPlaywright) {
+      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ npx playwright test' }]);
+      await wait(400);
+      addLog('Running 1 test using 1 worker', 'info');
+      await wait(700);
+      addLog('  ✓ should complete the flow (612ms)', 'success');
+      await wait(300);
+      addLog('1 passed (1.1s)', 'system');
+    } else if (isAppium) {
+      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ node test.js' }]);
+      await wait(400);
+      addLog('Starting Appium session...', 'info');
+      await wait(700);
+      addLog('Session started on emulator-5554', 'success');
+      await wait(500);
+      addLog('Test completed successfully.', 'success');
+      addLog('Process exited with code 0.', 'system');
+    } else if (isPytest) {
+      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ pytest -v' }]);
+      await wait(400);
+      addLog('collected 1 item', 'info');
+      await wait(700);
+      addLog('test_case.py::test_example PASSED', 'success');
+      await wait(300);
+      addLog('1 passed in 0.42s', 'system');
+    } else if (isSelenium) {
+      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ python test.py' }]);
+      await wait(400);
+      addLog('Initializing WebDriver session...', 'info');
+      await wait(700);
+      addLog('WebDriver session started successfully.', 'success');
+      await wait(500);
+      addLog('Test completed successfully.', 'success');
+      addLog('Process exited with code 0.', 'system');
     } else {
-      // ── MOCK: Standard Selenium WebDriver Script ──
-      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '> node main.js' }]);
-
-      await new Promise(r => setTimeout(r, 600));
-      addLog('Initializing Selenium WebDriver...', 'info');
-      
-      await new Promise(r => setTimeout(r, 1000));
-
-      const hasBuilder = cleanCode.includes('Builder().forBrowser(Browser.CHROME)') || cleanCode.includes('new Builder()');
-      const hasGet = cleanCode.includes('.get(') || cleanCode.includes('.navigate(');
-      const hasGfg = cleanCode.includes('geeksforgeeks.org');
-
-      if (!hasBuilder) {
-        addLog('Error: WebDriver Builder not initialized. Did you forget `new Builder().forBrowser(...)`?', 'error');
-        addLog('Process exited with code 1.', 'system');
-        setIsExecuting(false);
-        return;
-      }
-
-      addLog('Chrome WebDriver session started successfully.', 'success');
-      await new Promise(r => setTimeout(r, 800));
-
-      if (!hasGet || !hasGfg) {
-        addLog('Error: Navigation failed. Did you forget to navigate to https://www.geeksforgeeks.org/ ?', 'error');
-        addLog('Process exited with code 1.', 'system');
-        setIsExecuting(false);
-        return;
-      }
-
-      addLog('Navigated to: https://www.geeksforgeeks.org/', 'info');
-      
-      // ILLUSION: Actually pop open a new tab to make it feel incredibly real!
-      window.open('https://www.geeksforgeeks.org/', '_blank');
-      
-      await new Promise(r => setTimeout(r, 600));
-
+      setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ run' }]);
+      await wait(400);
+      addLog('Executing script...', 'info');
+      await wait(700);
       addLog('Execution completed successfully.', 'success');
       addLog('Process exited with code 0.', 'system');
     }
+
     setIsExecuting(false);
 
-    // Auto-mark as complete if they succeeded!
+    // Auto-mark as complete if they successfully ran their code
     if (activeLesson && !isCompleted(activeLesson.id)) {
       handleMarkComplete();
     }
