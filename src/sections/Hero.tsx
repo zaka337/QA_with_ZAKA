@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AmberCascades from './AmberCascades';
 import LiquidGlassButton from '../components/LiquidGlassButton';
 import { heroConfig } from '../config';
 
 export default function Hero() {
+  const navigate = useNavigate();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [titleWidth, setTitleWidth] = useState<number>(0);
 
@@ -89,17 +91,40 @@ export default function Hero() {
           )}
         </div>
 
-        {heroConfig.ctaText && (
-          <div style={{ display: 'flex', justifyContent: 'center' }} className="pointer-events-auto">
-            <LiquidGlassButton
+        <div
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}
+          className="pointer-events-auto"
+        >
+          {/* Primary action — a new visitor's only path to sign up was
+              previously buried in the nav bar; this button existed but only
+              scrolled to the curriculum section, with no actual signup link
+              anywhere on the homepage itself. */}
+          <LiquidGlassButton onClick={() => navigate('/signup')}>
+            Get Started Free
+          </LiquidGlassButton>
+
+          {heroConfig.ctaText && (
+            <button
               onClick={() => {
                 document.querySelector('#curriculum')?.scrollIntoView({ behavior: 'smooth' });
               }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: "'GeistMono', monospace",
+                fontSize: 13,
+                letterSpacing: '0.5px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                textUnderlineOffset: '4px',
+                textDecorationColor: 'rgba(255,255,255,0.25)',
+              }}
             >
-              {heroConfig.ctaText}
-            </LiquidGlassButton>
-          </div>
-        )}
+              {heroConfig.ctaText} ↓
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );

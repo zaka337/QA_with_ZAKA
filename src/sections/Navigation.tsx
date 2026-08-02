@@ -203,7 +203,7 @@ export default function Navigation() {
           ) : (
             navigationConfig.ctaText && (
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/signup')}
                 className="nav-link hidden md:inline-block bg-transparent cursor-pointer rounded px-5 py-2 border border-white/15 transition-all duration-300 hover:border-[rgba(196,167,125,0.5)] hover:text-[#c4a77d]"
               >
                 {navigationConfig.ctaText}
@@ -286,10 +286,10 @@ export default function Navigation() {
                 </>
               ) : (
                 <button
-                  onClick={() => { setMobileOpen(false); navigate('/login'); }}
+                  onClick={() => { setMobileOpen(false); navigate('/signup'); }}
                   className="mt-6 w-full nav-link bg-transparent cursor-pointer rounded px-5 py-3 border border-white/15 transition-all duration-300 text-center"
                 >
-                  {navigationConfig.ctaText || 'Start Learning'}
+                  {navigationConfig.ctaText || 'Get Started'}
                 </button>
               )}
             </div>

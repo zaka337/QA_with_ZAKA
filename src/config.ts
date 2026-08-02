@@ -33,7 +33,7 @@ export const navigationConfig: NavigationConfig = {
     { label: "Tool Stack", href: "#alumni" },
     { label: "Contact", href: "#contact" },
   ],
-  ctaText: "Start Learning",
+  ctaText: "Get Started",
 };
 
 // ============================================================
