@@ -353,7 +353,7 @@ export async function getAdminAuditLog(limit = 50): Promise<AdminAuditLogEntry[]
   return data ?? [];
 }
 
-export async function getRealAdminStats() {
+export async function getRealAdminStats(monthsBack: number | 'all' = 6) {
   // Fetch all required data in parallel
   const [
     { data: profiles },
@@ -392,13 +392,30 @@ export async function getRealAdminStats() {
 
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Growth data: Group by Month (e.g., 'Jan', 'Feb'), last 6 months
+  // Growth data: grouped by month. Label includes the year ("Aug '26") so
+  // ranges longer than 12 months don't collide two Augusts into one bucket —
+  // the previous version keyed purely by month name, which was silently
+  // wrong for anything beyond a 12-month window.
   const growthMap: Record<string, number> = {};
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthLabel = (d: Date) => `${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
   const monthOrder: string[] = [];
-  for (let i = 5; i >= 0; i--) {
+
+  const earliestSignup = safeProfiles.reduce<Date | null>((min, p: any) => {
+    if (!p.created_at) return min;
+    const d = new Date(p.created_at);
+    return !min || d < min ? d : min;
+  }, null);
+
+  const rangeMonths = monthsBack === 'all'
+    ? (earliestSignup
+        ? Math.max(0, (now.getFullYear() - earliestSignup.getFullYear()) * 12 + (now.getMonth() - earliestSignup.getMonth()))
+        : 0)
+    : monthsBack - 1;
+
+  for (let i = rangeMonths; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = monthNames[d.getMonth()];
+    const label = monthLabel(d);
     monthOrder.push(label);
     growthMap[label] = 0;
   }
@@ -410,8 +427,8 @@ export async function getRealAdminStats() {
       if (createdAt >= thisWeek) newStudentsWeek++;
       if (createdAt >= thisMonth) newStudentsMonth++;
 
-      const m = monthNames[createdAt.getMonth()];
-      if (m in growthMap) growthMap[m] += 1;
+      const label = monthLabel(createdAt);
+      if (label in growthMap) growthMap[label] += 1;
     }
   });
 

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from 'recharts';
 import {
   Users, DollarSign, Activity, BookOpen, Plus, Trash2, Edit2, Save, LayoutDashboard, ListTree, UploadCloud,
-  Bell, GraduationCap, UserPlus, CreditCard, History, ShieldAlert
+  Bell, GraduationCap, UserPlus, CreditCard, History, ShieldAlert, Search, Download, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import {
@@ -17,6 +17,54 @@ import {
 import { CodeEditor } from '../components/CodeEditor';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useAuth } from '../hooks/useAuth';
+import { useTableSearch } from '../hooks/useTableSearch';
+
+function TablePagination({ page, totalPages, onPrev, onNext, totalCount, label }: {
+  page: number; totalPages: number; onPrev: () => void; onNext: () => void; totalCount: number; label: string;
+}) {
+  if (totalCount === 0) return null;
+  return (
+    <div className="flex items-center justify-between pt-4 mt-2 border-t border-white/10 text-xs font-mono text-white/40 uppercase tracking-widest">
+      <span>{totalCount} {label}{totalCount !== 1 ? 's' : ''}</span>
+      {totalPages > 1 && (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onPrev}
+            disabled={page <= 1}
+            className="p-1.5 border border-white/20 hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span>Page {page} / {totalPages}</span>
+          <button
+            onClick={onNext}
+            disabled={page >= totalPages}
+            className="p-1.5 border border-white/20 hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function exportToCsv(filename: string, rows: Record<string, string | number>[]) {
+  if (rows.length === 0) return;
+  const headers = Object.keys(rows[0]);
+  const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((h) => escape(row[h])).join(',')),
+  ].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 
 
@@ -64,6 +112,30 @@ export default function AdminDashboard() {
   const [auditLog, setAuditLog] = useState<AdminAuditLogEntry[]>([]);
   const [loadingAuditLog, setLoadingAuditLog] = useState(false);
 
+  const usersSearch = useTableSearch(
+    allProfiles,
+    (p, q) => (p.display_name?.toLowerCase().includes(q) ?? false) || p.id.toLowerCase().includes(q),
+    10
+  );
+  const studentsSearch = useTableSearch(
+    students,
+    (s, q) => (s.display_name?.toLowerCase().includes(q) ?? false) || s.id.toLowerCase().includes(q),
+    10
+  );
+
+  const handleExportStudents = () => {
+    exportToCsv(
+      `students-${new Date().toISOString().slice(0, 10)}.csv`,
+      students.map((s) => ({
+        Name: s.display_name || 'No Name',
+        ID: s.id,
+        Plan: s.plan,
+        'Courses Enrolled': s.enrollments.length,
+        Joined: new Date(s.created_at).toLocaleDateString('en-US'),
+      }))
+    );
+  };
+
   const toggleStudentProgress = (id: string) => {
     setExpandedStudents(prev => {
       const next = new Set(prev);
@@ -93,17 +165,34 @@ export default function AdminDashboard() {
     setConfirmDialog({ isOpen: true, message, onConfirm });
   };
 
+  const [growthRange, setGrowthRange] = useState<6 | 12 | 'all'>(6);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  // Refetch just the stats (not curriculum/profiles) when the growth chart's
+  // range selector changes, so switching ranges doesn't re-fetch everything.
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return; // loadData() already covers the initial fetch
+    }
+    import('../lib/supabase')
+      .then(({ getRealAdminStats }) => getRealAdminStats(growthRange))
+      .then(setStats)
+      .catch((e: unknown) => console.error('Failed to refresh stats:', e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [growthRange]);
 
   const loadData = async () => {
     setLoadingStats(true);
     try {
       const { getRealAdminStats } = await import('../lib/supabase');
-      const s = await getRealAdminStats();
+      const s = await getRealAdminStats(growthRange);
       setStats(s);
-      
+
       const { supabase } = await import('../lib/supabase');
       const { data: c } = await supabase.from('courses').select('id').order('created_at', { ascending: false }).limit(1).single();
       if (c) {
@@ -111,7 +200,7 @@ export default function AdminDashboard() {
         const mods = await getCourseCurriculum(c.id);
         setModules(mods);
       }
-      
+
       const profilesData = await getAllProfiles();
       setAllProfiles(profilesData);
     } catch (error) {
@@ -428,7 +517,20 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Student Growth Area Chart */}
                   <div className="lg:col-span-2 bg-black border-2 border-white/20 p-6 rounded-none">
-                    <h3 className="text-sm font-geist text-white mb-6 uppercase tracking-widest">Student Growth</h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-sm font-geist text-white uppercase tracking-widest">Student Growth</h3>
+                      <div className="flex items-center gap-1 border border-white/20 p-0.5">
+                        {([[6, '6M'], [12, '12M'], ['all', 'ALL']] as const).map(([value, label]) => (
+                          <button
+                            key={label}
+                            onClick={() => setGrowthRange(value)}
+                            className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors ${growthRange === value ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={stats.studentGrowth}>
@@ -629,11 +731,23 @@ export default function AdminDashboard() {
         {/* ── Users Tab (User Management) ── */}
         {activeTab === 'users' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-black border-2 border-white/20 p-6 rounded-none">
-            <h2 className="text-xl font-ndot tracking-widest mb-6 uppercase border-b-2 border-white/10 pb-4">User Management</h2>
-            
+            <h2 className="text-xl font-ndot tracking-widest mb-4 uppercase border-b-2 border-white/10 pb-4">User Management</h2>
+
+            {/* Search */}
+            <div className="relative mb-6">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <input
+                type="text"
+                value={usersSearch.query}
+                onChange={(e) => usersSearch.setQuery(e.target.value)}
+                placeholder="Search by name or id..."
+                className="w-full bg-transparent border border-white/20 rounded-none pl-9 pr-4 py-2 text-white text-sm font-mono focus:outline-none focus:border-white/50 placeholder-white/30"
+              />
+            </div>
+
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 sm:hidden">
-              {allProfiles.map((p) => (
+              {usersSearch.paged.map((p) => (
                 <div key={p.id} className="border-2 border-white/10 p-4 flex flex-col gap-4 bg-white/[0.02]">
                   <div className="flex items-center gap-4">
                     {p.avatar_url ? (
@@ -666,7 +780,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {allProfiles.length === 0 && (
+              {usersSearch.paged.length === 0 && (
                 <div className="py-8 text-center text-white/50 font-mono text-xs tracking-widest uppercase">
                   No profiles found
                 </div>
@@ -686,7 +800,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allProfiles.map((p) => (
+                  {usersSearch.paged.map((p) => (
                     <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                       <td className="py-4 px-4">
                         {p.avatar_url ? (
@@ -724,7 +838,7 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                  {allProfiles.length === 0 && (
+                  {usersSearch.paged.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-white/50 font-mono text-xs tracking-widest uppercase">
                         No profiles found
@@ -734,6 +848,15 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+
+            <TablePagination
+              page={usersSearch.page}
+              totalPages={usersSearch.totalPages}
+              onPrev={() => usersSearch.setPage(usersSearch.page - 1)}
+              onNext={() => usersSearch.setPage(usersSearch.page + 1)}
+              totalCount={usersSearch.totalCount}
+              label="user"
+            />
           </div>
         )}
 
@@ -746,21 +869,31 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-ndot tracking-widest uppercase">Student Records</h2>
                 <p className="text-white/40 font-mono text-xs mt-1 uppercase tracking-wider">Complete record of all sign-ups and subscribers</p>
               </div>
-              <div className="flex items-center gap-1 border-2 border-white/20 p-1">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
-                  onClick={() => setStudentsView('all')}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${studentsView === 'all' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                  onClick={handleExportStudents}
+                  disabled={students.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest border-2 border-white/20 hover:border-white text-white/60 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  <UserPlus size={13} />
-                  All Sign-ups ({students.length})
+                  <Download size={13} />
+                  Export CSV
                 </button>
-                <button
-                  onClick={() => setStudentsView('subscribers')}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${studentsView === 'subscribers' ? 'bg-[#ea1f27] text-white' : 'text-white/50 hover:text-white'}`}
-                >
-                  <CreditCard size={13} />
-                  Subscribers ({students.filter(s => s.plan === 'lifetime' || s.plan === 'monthly').length})
-                </button>
+                <div className="flex items-center gap-1 border-2 border-white/20 p-1">
+                  <button
+                    onClick={() => setStudentsView('all')}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${studentsView === 'all' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                  >
+                    <UserPlus size={13} />
+                    All Sign-ups ({students.length})
+                  </button>
+                  <button
+                    onClick={() => setStudentsView('subscribers')}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${studentsView === 'subscribers' ? 'bg-[#ea1f27] text-white' : 'text-white/50 hover:text-white'}`}
+                  >
+                    <CreditCard size={13} />
+                    Subscribers ({students.filter(s => s.plan === 'lifetime' || s.plan === 'monthly').length})
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -774,9 +907,21 @@ export default function AdminDashboard() {
                 {/* ── All Sign-ups View ── */}
                 {studentsView === 'all' && (
                   <>
+                    {/* Search */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                      <input
+                        type="text"
+                        value={studentsSearch.query}
+                        onChange={(e) => studentsSearch.setQuery(e.target.value)}
+                        placeholder="Search by name or id..."
+                        className="w-full bg-transparent border border-white/20 rounded-none pl-9 pr-4 py-2 text-white text-sm font-mono focus:outline-none focus:border-white/50 placeholder-white/30"
+                      />
+                    </div>
+
                     {/* Mobile card view */}
                     <div className="grid grid-cols-1 gap-3 sm:hidden">
-                      {students.map(s => (
+                      {studentsSearch.paged.map(s => (
                         <div key={s.id} className="border-2 border-white/10 p-4 bg-white/[0.02]">
                           <div className="flex items-center gap-3 mb-3">
                             {s.avatar_url ? (
@@ -809,7 +954,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
-                      {students.length === 0 && (
+                      {studentsSearch.paged.length === 0 && (
                         <div className="py-12 text-center text-white/30 font-mono text-xs uppercase tracking-widest border-2 border-white/10">
                           No students found
                         </div>
@@ -829,7 +974,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {students.map(s => (
+                          {studentsSearch.paged.map(s => (
                             <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                               <td className="py-4 px-4">
                                 <div className="flex items-center gap-3">
@@ -870,7 +1015,7 @@ export default function AdminDashboard() {
                               </td>
                             </tr>
                           ))}
-                          {students.length === 0 && (
+                          {studentsSearch.paged.length === 0 && (
                             <tr>
                               <td colSpan={5} className="py-12 text-center text-white/30 font-mono text-xs uppercase tracking-widest">
                                 No students found
@@ -880,6 +1025,15 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
+
+                    <TablePagination
+                      page={studentsSearch.page}
+                      totalPages={studentsSearch.totalPages}
+                      onPrev={() => studentsSearch.setPage(studentsSearch.page - 1)}
+                      onNext={() => studentsSearch.setPage(studentsSearch.page + 1)}
+                      totalCount={studentsSearch.totalCount}
+                      label="student"
+                    />
                   </>
                 )}
 
