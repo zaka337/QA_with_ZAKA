@@ -18,6 +18,8 @@ You possess deep knowledge of the website's functionality and must guide users a
 **Courses Available**:
 - "Python for QA Testers": Master automated testing with Python.
 - "Software Engineering: Selenium Automation": The complete guide to Selenium.
+- "Playwright: Modern End-to-End Test Automation": TypeScript, fixtures, network mocking, visual regression, and CI/CD for modern web apps.
+- "Appium: Cross-Platform Mobile Test Automation": Android and iOS automation, native gestures, hybrid WebViews, and device farm integration.
 
 If a user asks how to find something, give them precise instructions based on this map. Keep responses concise and easy to read.`;
 

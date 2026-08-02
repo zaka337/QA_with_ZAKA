@@ -48,22 +48,21 @@ export function CodeEditor({ initialValue = '', language = 'javascript', onChang
             main.{language === 'javascript' ? 'js' : language === 'typescript' ? 'ts' : language === 'python' ? 'py' : 'txt'}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            className="px-3 py-1 text-xs font-inter font-medium text-white/70 bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-colors"
-            onClick={() => {
-              if (editorRef.current) {
-                if (onRun) {
-                  onRun(editorRef.current.getValue());
-                } else {
-                  alert('Code execution sandbox is not yet implemented!');
-                }
-              }
-            }}
-          >
-            Run Code
-          </button>
-        </div>
+        {/* Only shown where a real execution handler exists (CoursePlayer's mock
+            terminal) — the admin curriculum editor doesn't pass onRun, and a
+            button that just alert()s "not implemented" is worse than no button. */}
+        {onRun && (
+          <div className="flex items-center gap-2">
+            <button
+              className="px-3 py-1 text-xs font-inter font-medium text-white/70 bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-colors"
+              onClick={() => {
+                if (editorRef.current) onRun(editorRef.current.getValue());
+              }}
+            >
+              Run Code
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Monaco Editor */}

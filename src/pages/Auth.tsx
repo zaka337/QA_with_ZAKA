@@ -42,7 +42,16 @@ const signupSchema = z
     path: ['confirmPassword'],
   });
 
-// Forms for standard email/pass if desired (omitted from UI for minimalism, but typed here)
+// The form toggles between two different Zod schemas at runtime (login vs.
+// signup), so a single static type can't be inferred from either schema
+// alone. This shape covers both — confirmPassword is simply unused when
+// type === 'login' — which lets every field access below be properly typed
+// instead of casting `errors`/`data` to `any` throughout the component.
+type AuthFormData = {
+  email: string;
+  password: string;
+  confirmPassword?: string;
+};
 
 interface AuthProps {
   type: 'login' | 'signup';
@@ -98,8 +107,12 @@ export default function Auth({ type }: AuthProps) {
     formState: { errors, isSubmitting },
     setError,
     reset,
-  } = useHookForm<any>({
-    resolver: zodResolver(schema),
+  } = useHookForm<AuthFormData>({
+    // schema is one of two differently-shaped Zod schemas chosen at runtime,
+    // which zodResolver's generics can't express statically — this is the
+    // one deliberate cast; everything downstream (errors, register, data) is
+    // fully typed as AuthFormData.
+    resolver: zodResolver(schema as any),
   });
 
   // Reset form when switching between login and signup
@@ -121,7 +134,7 @@ export default function Auth({ type }: AuthProps) {
   }, [type]);
 
   /* ── Email/Password Submit ── */
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: AuthFormData) => {
     setSuccessMsg('');
     try {
       if (isLogin) {
@@ -206,7 +219,7 @@ export default function Auth({ type }: AuthProps) {
           {/* Root error */}
           {errors.root && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-inter font-light rounded">
-              {(errors.root as any).message}
+              {errors.root.message}
             </div>
           )}
 
@@ -217,7 +230,7 @@ export default function Auth({ type }: AuthProps) {
             placeholder="name@example.com"
             autoComplete="email"
             {...register('email')}
-            error={(errors as any).email?.message}
+            error={errors.email?.message}
           />
 
           {/* Password */}
@@ -228,11 +241,11 @@ export default function Auth({ type }: AuthProps) {
               placeholder="••••••••"
               autoComplete={isLogin ? 'current-password' : 'new-password'}
               {...register('password')}
-              error={(errors as any).password?.message}
+              error={errors.password?.message}
             />
 
             {/* ── Password requirements hint (signup only) ── */}
-            {!isLogin && !(errors as any).password && (
+            {!isLogin && !errors.password && (
               <p className="mt-2 text-xs text-white/30 font-inter font-light">
                 Min 8 chars · uppercase · lowercase · number · special character
               </p>
@@ -247,7 +260,7 @@ export default function Auth({ type }: AuthProps) {
               placeholder="••••••••"
               autoComplete="new-password"
               {...register('confirmPassword')}
-              error={(errors as any).confirmPassword?.message}
+              error={errors.confirmPassword?.message}
             />
           )}
 

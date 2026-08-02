@@ -655,10 +655,9 @@ export default function AdminDashboard() {
                       className="bg-black border border-white/20 text-white text-xs font-mono uppercase tracking-widest p-2 cursor-pointer focus:outline-none focus:border-[#ea1f27]"
                     >
                       <option value="student">Student</option>
-                      <option value="instructor">Instructor</option>
                       <option value="admin">Admin</option>
                     </select>
-                    <button 
+                    <button
                       onClick={() => handleAdminEnroll(p.id)}
                       className="px-4 py-2 bg-transparent border border-white/20 text-white text-xs font-mono uppercase tracking-widest hover:border-white hover:bg-white/10 transition-colors rounded-none"
                     >
@@ -709,7 +708,6 @@ export default function AdminDashboard() {
                           className="bg-transparent border border-white/20 text-white text-[10px] sm:text-xs font-mono uppercase tracking-widest p-1 cursor-pointer focus:outline-none focus:border-[#ea1f27]"
                         >
                           <option value="student" className="bg-black text-white">Student</option>
-                          <option value="instructor" className="bg-black text-white">Instructor</option>
                           <option value="admin" className="bg-black text-white">Admin</option>
                         </select>
                       </td>
