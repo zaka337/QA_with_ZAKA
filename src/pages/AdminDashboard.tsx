@@ -102,6 +102,8 @@ export default function AdminDashboard() {
   const [modules, setModules] = useState<Module[]>([]);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [courseId, setCourseId] = useState<string>('');
+  const [allCourses, setAllCourses] = useState<{ id: string; title: string }[]>([]);
+  const [loadingModules, setLoadingModules] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
@@ -194,10 +196,19 @@ export default function AdminDashboard() {
       setStats(s);
 
       const { supabase } = await import('../lib/supabase');
-      const { data: c } = await supabase.from('courses').select('id').order('created_at', { ascending: false }).limit(1).single();
-      if (c) {
-        setCourseId(c.id);
-        const mods = await getCourseCurriculum(c.id);
+      const { data: courses } = await supabase.from('courses').select('id, title').order('created_at', { ascending: false });
+      setAllCourses(courses ?? []);
+
+      // Keep the currently selected course if it still exists (e.g. after
+      // creating/editing a module), otherwise default to the first course —
+      // previously this only ever fetched the single most-recently-created
+      // course with no way to switch, which silently hid every other
+      // course's curriculum from this tab entirely.
+      const stillExists = courses?.some(c => c.id === courseId);
+      const targetCourseId = stillExists ? courseId : courses?.[0]?.id;
+      if (targetCourseId) {
+        setCourseId(targetCourseId);
+        const mods = await getCourseCurriculum(targetCourseId);
         setModules(mods);
       }
 
@@ -207,6 +218,20 @@ export default function AdminDashboard() {
       console.error("Failed to load admin data:", error);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const handleCourseSwitch = async (newCourseId: string) => {
+    setCourseId(newCourseId);
+    setSelectedItem(null);
+    setLoadingModules(true);
+    try {
+      const mods = await getCourseCurriculum(newCourseId);
+      setModules(mods);
+    } catch (e) {
+      console.error('Failed to load course curriculum:', e);
+    } finally {
+      setLoadingModules(false);
     }
   };
 
@@ -602,8 +627,26 @@ export default function AdminDashboard() {
 
         {/* ── Curriculum CMS Tab ── */}
         {activeTab === 'curriculum' && (
-          <div className="flex flex-col md:flex-row gap-6 h-auto md:h-[700px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
+          <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* Course Selector — previously this tab only ever showed the
+                single most-recently-created course with no way to switch,
+                silently hiding every other course's curriculum. */}
+            <div className="flex items-center gap-3 bg-black border-2 border-white/20 p-4">
+              <span className="text-xs font-mono uppercase tracking-widest text-white/50 shrink-0">Course:</span>
+              <select
+                value={courseId}
+                onChange={(e) => handleCourseSwitch(e.target.value)}
+                className="flex-1 bg-black border border-white/20 text-white text-sm font-mono uppercase tracking-wider p-2 cursor-pointer focus:outline-none focus:border-[#ea1f27]"
+              >
+                {allCourses.map(c => (
+                  <option key={c.id} value={c.id} className="bg-black text-white">{c.title}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-6 h-auto md:h-[700px]">
+
             {/* Sidebar Syllabus Tree */}
             <div className="w-full md:w-80 shrink-0 bg-black border-2 border-white/20 rounded-none flex flex-col overflow-hidden">
               <div className="p-4 border-b-2 border-white/20 flex items-center justify-between">
@@ -612,6 +655,11 @@ export default function AdminDashboard() {
                   <Plus size={16} />
                 </button>
               </div>
+              {loadingModules ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+                </div>
+              ) : (
               <ScrollArea.Root className="flex-1 overflow-hidden">
                 <ScrollArea.Viewport className="w-full h-full p-4">
                   {modules.map(mod => (
@@ -643,6 +691,7 @@ export default function AdminDashboard() {
                 </ScrollArea.Viewport>
                 <ScrollArea.Scrollbar orientation="vertical" className="w-1.5 bg-black"><ScrollArea.Thumb className="bg-white/20 rounded-full" /></ScrollArea.Scrollbar>
               </ScrollArea.Root>
+              )}
             </div>
 
             {/* Main Editor Panel */}
@@ -725,6 +774,7 @@ export default function AdminDashboard() {
               )}
             </div>
 
+            </div>
           </div>
         )}
 
