@@ -193,19 +193,57 @@ export async function enrollInCourse(userId: string, courseId: string) {
   return !error;
 }
 
-/** Fetch a full course curriculum (modules + lessons) */
+/**
+ * Fetch a full course curriculum (modules + lessons). Lessons are read from
+ * the lessons_secure view, not the raw table — it nulls out
+ * content_markdown/starter_code/solution_code/quiz_data server-side for any
+ * lesson the querying user doesn't actually have access to (see
+ * supabase_secure_lesson_content.sql), so a locked lesson's real content
+ * never reaches the browser at all, regardless of what the UI does with it.
+ * Admins reading this same function still see everything, since the view's
+ * gating already accounts for private.is_admin().
+ *
+ * Queried as two separate calls (modules, then lessons_secure by module_id)
+ * rather than a nested embed — PostgREST's automatic FK-based embedding
+ * isn't reliably supported through a view.
+ */
 export async function getCourseCurriculum(courseId: string): Promise<Module[]> {
   const { data: modules } = await supabase
     .from('modules')
-    .select('*, lessons(*)')
+    .select('*')
     .eq('course_id', courseId)
     .order('order_index');
 
-  if (!modules) return [];
+  if (!modules || modules.length === 0) return [];
+
+  const moduleIds = modules.map((m: any) => m.id);
+
+  // Falls back to the raw table if lessons_secure doesn't exist yet (i.e.
+  // supabase_secure_lesson_content.sql hasn't been run in this environment)
+  // so deploying this code doesn't depend on migration order — it just
+  // degrades to the previous (unrestricted) behavior until the view exists.
+  let lessonsResult = await supabase
+    .from('lessons_secure')
+    .select('*')
+    .in('module_id', moduleIds)
+    .order('order_index');
+
+  if (lessonsResult.error) {
+    console.warn('lessons_secure view unavailable, falling back to raw lessons table:', lessonsResult.error.message);
+    lessonsResult = await supabase
+      .from('lessons')
+      .select('*')
+      .in('module_id', moduleIds)
+      .order('order_index');
+  }
+
+  const safeLessons = (lessonsResult.data ?? []) as Lesson[];
 
   return modules.map((m: any) => ({
     ...m,
-    lessons: (m.lessons ?? []).sort((a: Lesson, b: Lesson) => a.order_index - b.order_index),
+    lessons: safeLessons
+      .filter((l) => l.module_id === m.id)
+      .sort((a, b) => a.order_index - b.order_index),
   }));
 }
 
