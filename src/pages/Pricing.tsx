@@ -81,6 +81,9 @@ export default function Pricing() {
             words={["Craft", "Toolchain", "Automation", "Career"]}
             description="Gain full access to the complete roadmap, premium video courses, and an exclusive alumni community."
           />
+          <p className="text-center text-white/40 font-inter font-light text-sm mt-6">
+            Every course starts with a free first module — no card required. Upgrade whenever you're ready for the rest.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">

@@ -7,6 +7,7 @@ import {
   getCourseCurriculum,
   getLessonProgress,
   markLessonComplete,
+  hasFullCourseAccess,
   type Module,
   type Lesson,
   type LessonProgress,
@@ -14,6 +15,7 @@ import {
 import { LessonContent } from '../components/LessonContent';
 import { CodeEditor } from '../components/CodeEditor';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { Lock } from 'lucide-react';
 
 type LogType = 'info' | 'success' | 'error' | 'system';
 interface TerminalLog {
@@ -34,6 +36,7 @@ export default function CoursePlayer() {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [hasFullAccess, setHasFullAccess] = useState(true);
 
   useDocumentTitle(activeLesson?.title || 'Course Player');
 
@@ -50,18 +53,26 @@ export default function CoursePlayer() {
     if (!courseId || !user) return;
 
     const load = async () => {
-      const [modules, prog] = await Promise.all([
+      const [modules, prog, fullAccess] = await Promise.all([
         getCourseCurriculum(courseId),
         getLessonProgress(user.id, courseId),
+        hasFullCourseAccess(user.id, courseId),
       ]);
       setCurriculum(modules);
       setProgress(prog);
+      setHasFullAccess(fullAccess);
 
-      // Set first incomplete lesson as active, or first lesson
-      const allLessons = modules.flatMap(m => m.lessons);
+      // Free-preview students only get the first module — restrict which
+      // lessons are eligible to become the initially active one so they
+      // don't land on a locked lesson by default.
+      const sortedModules = [...modules].sort((a, b) => a.order_index - b.order_index);
+      const eligibleLessons = fullAccess
+        ? modules.flatMap(m => m.lessons)
+        : (sortedModules[0]?.lessons ?? []);
+
       const completedIds = new Set(prog.filter(p => p.completed).map(p => p.lesson_id));
-      const firstIncomplete = allLessons.find(l => !completedIds.has(l.id));
-      setActiveLesson(firstIncomplete ?? allLessons[0] ?? null);
+      const firstIncomplete = eligibleLessons.find(l => !completedIds.has(l.id));
+      setActiveLesson(firstIncomplete ?? eligibleLessons[0] ?? null);
       setLoading(false);
     };
 
@@ -108,6 +119,15 @@ export default function CoursePlayer() {
 
   const allLessons = curriculum.flatMap(m => m.lessons);
   const activeIndex = activeLesson ? allLessons.findIndex(l => l.id === activeLesson.id) : -1;
+
+  // Free-preview access is limited to the first module (by order_index) of
+  // each course; everything else requires a paid plan or an explicit
+  // enrollment grant.
+  const firstModuleId = curriculum.length > 0
+    ? [...curriculum].sort((a, b) => a.order_index - b.order_index)[0].id
+    : null;
+  const isLessonLocked = (lesson: Lesson) => !hasFullAccess && lesson.module_id !== firstModuleId;
+  const activeLessonLocked = activeLesson ? isLessonLocked(activeLesson) : false;
 
   const goToNextLesson = () => {
     if (activeIndex < allLessons.length - 1) {
@@ -219,7 +239,7 @@ export default function CoursePlayer() {
     );
   }
 
-  const hasEditor = !!activeLesson?.starter_code || !!activeLesson?.solution_code;
+  const hasEditor = !activeLessonLocked && (!!activeLesson?.starter_code || !!activeLesson?.solution_code);
 
   return (
     <div ref={containerRef} className="h-screen w-screen bg-black text-white flex overflow-hidden font-inter player-fade-in">
@@ -250,8 +270,25 @@ export default function CoursePlayer() {
           
           {/* Left: Theory & Quiz */}
           <div className={`w-full lg:flex-1 h-full overflow-y-auto min-h-0 ${hasEditor ? 'lg:max-w-[50%] border-b lg:border-b-0 lg:border-r border-white/5' : 'max-w-4xl mx-auto border-none'}`}>
-            {activeLesson ? (
-              <LessonContent 
+            {activeLesson && activeLessonLocked ? (
+              <div className="flex flex-col items-center justify-center text-center h-full px-6 py-12">
+                <div className="w-14 h-14 rounded-full border border-amber-400/30 bg-amber-400/10 flex items-center justify-center mb-6">
+                  <Lock size={22} className="text-amber-400" />
+                </div>
+                <h2 className="font-eb-garamond text-2xl mb-3">This lesson is part of the full course</h2>
+                <p className="text-white/50 font-inter font-light text-sm max-w-sm mb-8 leading-relaxed">
+                  You've got free access to Module 1. Unlock the rest of "{curriculum.find(m => m.id === activeLesson.module_id)?.title}"
+                  and every other module with a Lifetime or Monthly plan.
+                </p>
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="px-6 py-3 bg-amber-400 text-black text-sm font-geist uppercase tracking-widest hover:bg-amber-300 transition-colors"
+                >
+                  View Pricing
+                </button>
+              </div>
+            ) : activeLesson ? (
+              <LessonContent
                 content={activeLesson.content_markdown || 'No content provided for this lesson yet.'}
                 quiz={activeLesson.quiz_data}
                 onQuizSuccess={handleMarkComplete}
@@ -322,8 +359,8 @@ export default function CoursePlayer() {
             <p className="text-sm font-light text-white/60 truncate">{activeModule?.title}</p>
           </div>
           <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-            {/* Mark complete */}
-            {activeLesson && !isCompleted(activeLesson.id) && (
+            {/* Mark complete — hidden entirely for locked lessons */}
+            {activeLesson && !activeLessonLocked && !isCompleted(activeLesson.id) && (
               <button
                 onClick={handleMarkComplete}
                 disabled={completing}
@@ -332,9 +369,14 @@ export default function CoursePlayer() {
                 {completing ? 'Saving...' : <>✓ <span className="hidden sm:inline">Mark Complete</span></>}
               </button>
             )}
-            {activeLesson && isCompleted(activeLesson.id) && (
+            {activeLesson && !activeLessonLocked && isCompleted(activeLesson.id) && (
               <span className="text-[10px] sm:text-xs font-geist uppercase tracking-wider text-green-400/50 whitespace-nowrap">
                 ✓ <span className="hidden sm:inline">Completed</span>
+              </span>
+            )}
+            {activeLesson && activeLessonLocked && (
+              <span className="text-[10px] sm:text-xs font-geist uppercase tracking-wider text-amber-400/70 flex items-center gap-1.5 whitespace-nowrap">
+                <Lock size={11} /> Locked
               </span>
             )}
             <div className="flex items-center gap-2 sm:gap-3">
@@ -393,6 +435,7 @@ export default function CoursePlayer() {
                   {module.lessons.map((lesson) => {
                     const done = isCompleted(lesson.id);
                     const active = activeLesson?.id === lesson.id;
+                    const locked = isLessonLocked(lesson);
                     return (
                       <button
                         key={lesson.id}
@@ -404,7 +447,9 @@ export default function CoursePlayer() {
                         style={{ background: active ? 'rgba(255,255,255,0.08)' : undefined, border: 'none' }}
                       >
                         <div className="mt-0.5 flex-shrink-0">
-                          {done ? (
+                          {locked ? (
+                            <Lock size={14} className="text-amber-400/70" />
+                          ) : done ? (
                             <div className="w-4 h-4 rounded-full bg-white/30 flex items-center justify-center">
                               <div className="w-1.5 h-1.5 bg-white rounded-full" />
                             </div>
@@ -417,7 +462,7 @@ export default function CoursePlayer() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0 overflow-hidden">
-                          <div className={`text-xs sm:text-sm font-light break-words ${active ? 'text-white' : done ? 'text-white/50 line-through' : 'text-white/70 group-hover:text-white'} transition-colors`}>
+                          <div className={`text-xs sm:text-sm font-light break-words ${locked ? 'text-white/40' : active ? 'text-white' : done ? 'text-white/50 line-through' : 'text-white/70 group-hover:text-white'} transition-colors`}>
                             {lesson.title}
                           </div>
                         </div>

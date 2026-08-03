@@ -5,19 +5,20 @@ import * as Progress from '@radix-ui/react-progress';
 import { Button } from '../components/Button';
 import { useAuth } from '../hooks/useAuth';
 import {
-  getEnrollments,
+  getCoursesWithAccess,
   getLessonProgress,
   type Course,
   type LessonProgress,
 } from '../lib/supabase';
 import { CertificateTemplate } from '../components/CertificateTemplate';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { Download, BookOpen, CheckCircle, ChevronRight, MonitorPlay } from 'lucide-react';
+import { Download, BookOpen, CheckCircle, ChevronRight, MonitorPlay, Lock } from 'lucide-react';
 
 type EnrolledCourseData = {
   course: Course;
   progress: LessonProgress[];
   totalLessons: number;
+  hasFullAccess: boolean;
 };
 
 type CourseVisual = {
@@ -115,31 +116,33 @@ export default function Dashboard() {
 
     const init = async () => {
       try {
-        // 1. Check enrollments
-        const enrollments = await getEnrollments(user.id);
+        // Every published course now shows here, regardless of payment —
+        // previously free-plan students with no admin-granted enrollment saw
+        // a completely empty Dashboard. Locked courses are still limited to
+        // their first module in CoursePlayer; hasFullAccess just controls
+        // the badge/CTA shown on this page.
+        const accessList = await getCoursesWithAccess(user.id);
 
-        if (enrollments.length > 0) {
-          const coursesData = await Promise.all(
-            enrollments.map(async (e: any) => {
-              const activeCourse = e.courses as Course;
-              const prog = await getLessonProgress(user.id, activeCourse.id);
-              
-              const { data: lessons } = await import('../lib/supabase').then(m =>
-                m.supabase
-                  .from('lessons')
-                  .select('id, modules!inner(course_id)')
-                  .eq('modules.course_id', activeCourse.id)
-              );
-              
-              return {
-                course: activeCourse,
-                progress: prog,
-                totalLessons: lessons?.length ?? 0
-              };
-            })
-          );
-          setEnrolledCourses(coursesData);
-        }
+        const coursesData = await Promise.all(
+          accessList.map(async ({ course, hasFullAccess }) => {
+            const prog = await getLessonProgress(user.id, course.id);
+
+            const { data: lessons } = await import('../lib/supabase').then(m =>
+              m.supabase
+                .from('lessons')
+                .select('id, modules!inner(course_id)')
+                .eq('modules.course_id', course.id)
+            );
+
+            return {
+              course,
+              progress: prog,
+              totalLessons: lessons?.length ?? 0,
+              hasFullAccess,
+            };
+          })
+        );
+        setEnrolledCourses(coursesData);
       } finally {
         setLoading(false);
       }
@@ -225,9 +228,9 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {enrolledCourses.length > 0 && (
+            {(profile?.plan === 'lifetime' || profile?.plan === 'monthly') && (
               <div className="text-sm font-geist text-white/50 uppercase tracking-widest">
-                Lifetime Member
+                {profile.plan === 'lifetime' ? 'Lifetime Member' : 'Monthly Member'}
               </div>
             )}
             <button
@@ -394,11 +397,15 @@ export default function Dashboard() {
                       <span className="text-[10px] font-geist bg-white/5 px-2 py-1 flex items-center gap-2 uppercase tracking-widest text-white/70 border border-white/5">
                         <BookOpen size={10}/> {data.totalLessons} Chapters
                       </span>
-                      {progressPct === 100 && (
+                      {data.hasFullAccess && progressPct === 100 ? (
                         <span className="text-[10px] font-geist text-[#4ade80] flex items-center gap-1 uppercase tracking-widest">
                           <CheckCircle size={10}/> Certified
                         </span>
-                      )}
+                      ) : !data.hasFullAccess ? (
+                        <span className="text-[10px] font-geist text-amber-400 flex items-center gap-1 uppercase tracking-widest">
+                          <Lock size={10}/> Free Preview
+                        </span>
+                      ) : null}
                     </div>
 
                     {/* Thumbnail */}
@@ -455,17 +462,26 @@ export default function Dashboard() {
                         <span className="text-xs font-geist text-white/60">Progress: {progressPct}%</span>
                       </div>
                       
-                      {progressPct === 100 ? (
+                      {data.hasFullAccess && progressPct === 100 ? (
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => navigate(`/course/${data.course.id}`)}>Replay</Button>
-                          <Button 
-                            variant="primary" 
-                            size="sm" 
+                          <Button
+                            variant="primary"
+                            size="sm"
                             className="bg-[#4ade80] text-black border-none px-3"
                             onClick={() => handleDownloadCertificate(data.course.id, data.course.title)}
                             disabled={isGeneratingCert === data.course.id}
                           >
                             {isGeneratingCert === data.course.id ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <Download size={14} />}
+                          </Button>
+                        </div>
+                      ) : !data.hasFullAccess ? (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/course/${data.course.id}`)}>
+                            {progressPct === 0 ? 'Free Preview' : 'Continue Preview'}
+                          </Button>
+                          <Button variant="primary" size="sm" className="bg-amber-400 text-black border-none px-3" onClick={() => navigate('/pricing')}>
+                            Unlock
                           </Button>
                         </div>
                       ) : (

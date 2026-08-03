@@ -146,6 +146,45 @@ export async function getEnrollments(userId: string) {
   return data ?? [];
 }
 
+export type CourseAccess = {
+  course: Course;
+  hasFullAccess: boolean;
+  enrolledAt: string | null;
+};
+
+/**
+ * Every published course, with a flag for whether this user has full paid
+ * access (lifetime/monthly plan, or an explicit enrollment grant) versus
+ * free-preview access (first module only — enforced in CoursePlayer).
+ * Previously getEnrollments() returned nothing at all for free-plan users
+ * with no admin-granted enrollment, so their Dashboard showed zero courses.
+ */
+export async function getCoursesWithAccess(userId: string): Promise<CourseAccess[]> {
+  const [{ data: profile }, { data: courses }, { data: enrollments }] = await Promise.all([
+    supabase.from('profiles').select('plan').eq('id', userId).single(),
+    supabase.from('courses').select('*').eq('is_published', true),
+    supabase.from('enrollments').select('course_id, enrolled_at').eq('user_id', userId),
+  ]);
+
+  const isPaidPlan = profile?.plan === 'lifetime' || profile?.plan === 'monthly';
+  const enrollmentMap = new Map((enrollments ?? []).map((e: any) => [e.course_id, e.enrolled_at]));
+
+  return (courses ?? []).map((course: any) => ({
+    course,
+    hasFullAccess: isPaidPlan || enrollmentMap.has(course.id),
+    enrolledAt: enrollmentMap.get(course.id) ?? null,
+  }));
+}
+
+/** Whether a specific user has full (paid) access to a course, vs free-preview access. */
+export async function hasFullCourseAccess(userId: string, courseId: string): Promise<boolean> {
+  const [{ data: profile }, { data: enrollment }] = await Promise.all([
+    supabase.from('profiles').select('plan').eq('id', userId).single(),
+    supabase.from('enrollments').select('id').eq('user_id', userId).eq('course_id', courseId).maybeSingle(),
+  ]);
+  return profile?.plan === 'lifetime' || profile?.plan === 'monthly' || !!enrollment;
+}
+
 /** Auto-enroll user in a course (used for demo / after payment) */
 export async function enrollInCourse(userId: string, courseId: string) {
   const { error } = await supabase
