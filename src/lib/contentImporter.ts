@@ -18,7 +18,7 @@ export interface LessonImportData {
   solution_code?: string;
   quiz_data?: QuizQuestion | null;
   duration?: string;
-  resources?: any; // JSON for external links/files
+  resources?: Record<string, unknown>; // JSON for external links/files
 }
 
 export interface ModuleImportData {
@@ -150,8 +150,8 @@ export async function importCourseContent(courseData: CourseImportData) {
     }
 
     return { success: true, message: `Successfully imported: ${courseData.title}` };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Content Import Error:', error);
-    return { success: false, message: error.message };
+    return { success: false, message: error instanceof Error ? error.message : String(error) };
   }
 }

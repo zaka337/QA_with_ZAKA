@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { QuizQuestion } from '../components/QuizBlock';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
@@ -45,7 +46,7 @@ export type Lesson = {
   content_markdown: string | null;
   starter_code: string | null;
   solution_code: string | null;
-  quiz_data: any | null; // JSONB
+  quiz_data: QuizQuestion | null; // JSONB — no DB-level schema; validated at render time in LessonContent
   duration: string | null;
   order_index: number;
 };
@@ -167,9 +168,11 @@ export async function getCoursesWithAccess(userId: string): Promise<CourseAccess
   ]);
 
   const isPaidPlan = profile?.plan === 'lifetime' || profile?.plan === 'monthly';
-  const enrollmentMap = new Map((enrollments ?? []).map((e: any) => [e.course_id, e.enrolled_at]));
+  const enrollmentMap = new Map(
+    (enrollments ?? []).map((e: { course_id: string; enrolled_at: string }) => [e.course_id, e.enrolled_at])
+  );
 
-  return (courses ?? []).map((course: any) => ({
+  return (courses ?? []).map((course: Course) => ({
     course,
     hasFullAccess: isPaidPlan || enrollmentMap.has(course.id),
     enrolledAt: enrollmentMap.get(course.id) ?? null,
@@ -207,6 +210,8 @@ export async function enrollInCourse(userId: string, courseId: string) {
  * rather than a nested embed — PostgREST's automatic FK-based embedding
  * isn't reliably supported through a view.
  */
+type ModuleRow = Omit<Module, 'lessons'>;
+
 export async function getCourseCurriculum(courseId: string): Promise<Module[]> {
   const { data: modules } = await supabase
     .from('modules')
@@ -216,7 +221,7 @@ export async function getCourseCurriculum(courseId: string): Promise<Module[]> {
 
   if (!modules || modules.length === 0) return [];
 
-  const moduleIds = modules.map((m: any) => m.id);
+  const moduleIds = modules.map((m: ModuleRow) => m.id);
 
   // Falls back to the raw table if lessons_secure doesn't exist yet (i.e.
   // supabase_secure_lesson_content.sql hasn't been run in this environment)
@@ -239,7 +244,7 @@ export async function getCourseCurriculum(courseId: string): Promise<Module[]> {
 
   const safeLessons = (lessonsResult.data ?? []) as Lesson[];
 
-  return modules.map((m: any) => ({
+  return modules.map((m: ModuleRow) => ({
     ...m,
     lessons: safeLessons
       .filter((l) => l.module_id === m.id)
@@ -257,7 +262,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
 
   if (!lessons || lessons.length === 0) return [];
 
-  const lessonIds = lessons.map((l: any) => l.id);
+  const lessonIds = lessons.map((l: { id: string }) => l.id);
 
   const { data: progress } = await supabase
     .from('lesson_progress')
@@ -478,7 +483,7 @@ export async function getRealAdminStats(monthsBack: number | 'all' = 6) {
   const monthLabel = (d: Date) => `${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
   const monthOrder: string[] = [];
 
-  const earliestSignup = safeProfiles.reduce<Date | null>((min, p: any) => {
+  const earliestSignup = safeProfiles.reduce<Date | null>((min, p: { created_at: string | null }) => {
     if (!p.created_at) return min;
     const d = new Date(p.created_at);
     return !min || d < min ? d : min;
@@ -497,7 +502,7 @@ export async function getRealAdminStats(monthsBack: number | 'all' = 6) {
     growthMap[label] = 0;
   }
 
-  safeProfiles.forEach((p: any) => {
+  safeProfiles.forEach((p: { created_at: string | null }) => {
     const createdAt = p.created_at ? new Date(p.created_at) : null;
     if (createdAt) {
       if (createdAt >= today) newStudentsToday++;
@@ -561,8 +566,8 @@ export async function getRealAdminStats(monthsBack: number | 'all' = 6) {
 
   const moduleStatsMap: Record<string, { title: string; completed: number; total: number }> = {};
 
-  safeModules.forEach((m: any) => {
-    const course = safeCourses.find((c: any) => c.id === m.course_id);
+  safeModules.forEach((m: { id: string; title: string; course_id: string }) => {
+    const course = safeCourses.find((c: { id: string; title: string }) => c.id === m.course_id);
     const courseCode = course ? shortCourseCode(course.title) : '';
     const shortTitle = shortModuleNumber(m.title);
     moduleStatsMap[m.id] = {
@@ -632,6 +637,11 @@ export type StudentRecord = {
   courseProgress: StudentCourseProgress[];
 };
 
+type StudentEnrollmentRow = { user_id: string; course_id: string; plan: string; enrolled_at: string };
+type StudentCourseRow = { id: string; title: string; is_published: boolean };
+type StudentLessonRow = { id: string; modules: { course_id: string } | null };
+type StudentProgressRow = { user_id: string; lesson_id: string; completed: boolean };
+
 export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
   // Fetch all profiles
   const { data: profiles } = await supabase
@@ -663,27 +673,27 @@ export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
 
   const safeEnrollments = enrollments || [];
   const safeCourses = courses || [];
-  const safeLessons = lessons || [];
+  const safeLessons = (lessons ?? []) as unknown as StudentLessonRow[];
   const safeProgress = progress || [];
 
   // Build lesson→course map
   const lessonCourseMap: Record<string, string> = {};
-  safeLessons.forEach((l: any) => {
-    lessonCourseMap[l.id] = l.modules?.course_id;
+  safeLessons.forEach((l: StudentLessonRow) => {
+    if (l.modules?.course_id) lessonCourseMap[l.id] = l.modules.course_id;
   });
 
   // Build total lessons per course
   const totalLessonsPerCourse: Record<string, number> = {};
-  safeLessons.forEach((l: any) => {
+  safeLessons.forEach((l: StudentLessonRow) => {
     const cid = l.modules?.course_id;
     if (cid) totalLessonsPerCourse[cid] = (totalLessonsPerCourse[cid] || 0) + 1;
   });
 
-  const publishedCourses = safeCourses.filter((c: any) => c.is_published);
+  const publishedCourses = safeCourses.filter((c: StudentCourseRow) => c.is_published);
 
   return profiles.map((profile: Profile) => {
-    const userEnrollments = safeEnrollments.filter((e: any) => e.user_id === profile.id);
-    const userProgress = safeProgress.filter((p: any) => p.user_id === profile.id && p.completed);
+    const userEnrollments = safeEnrollments.filter((e: StudentEnrollmentRow) => e.user_id === profile.id);
+    const userProgress = safeProgress.filter((p: StudentProgressRow) => p.user_id === profile.id && p.completed);
 
     // Lifetime/monthly members get access to every published course automatically
     // (same rule getEnrollments() applies for the student's own Dashboard), so their
@@ -691,24 +701,24 @@ export async function getStudentsWithDetails(): Promise<StudentRecord[]> {
     // literal enrollment rows written at signup/webhook time.
     const isPaidMember = profile.plan === 'lifetime' || profile.plan === 'monthly';
     const effectiveCourses: { course_id: string; plan: string; enrolled_at: string }[] = isPaidMember
-      ? publishedCourses.map((c: any) => {
-          const existing = userEnrollments.find((e: any) => e.course_id === c.id);
+      ? publishedCourses.map((c: StudentCourseRow) => {
+          const existing = userEnrollments.find((e: StudentEnrollmentRow) => e.course_id === c.id);
           return {
             course_id: c.id,
             plan: profile.plan,
             enrolled_at: existing?.enrolled_at || profile.created_at,
           };
         })
-      : userEnrollments.map((e: any) => ({
+      : userEnrollments.map((e: StudentEnrollmentRow) => ({
           course_id: e.course_id,
           plan: e.plan,
           enrolled_at: e.enrolled_at,
         }));
 
     const courseProgress: StudentCourseProgress[] = effectiveCourses.map((e) => {
-      const course = safeCourses.find((c: any) => c.id === e.course_id);
+      const course = safeCourses.find((c: StudentCourseRow) => c.id === e.course_id);
       const completedLessons = userProgress.filter(
-        (p: any) => lessonCourseMap[p.lesson_id] === e.course_id
+        (p: StudentProgressRow) => lessonCourseMap[p.lesson_id] === e.course_id
       ).length;
       return {
         courseId: e.course_id,
@@ -745,17 +755,25 @@ export async function getAdminNotifications(): Promise<AdminNotification[]> {
     .order('created_at', { ascending: false })
     .limit(100);
 
+  type EnrollmentNotificationRow = {
+    user_id: string;
+    plan: string;
+    enrolled_at: string;
+    profiles: { display_name: string | null; avatar_url: string | null } | null;
+  };
+
   const { data: enrollments } = await supabase
     .from('enrollments')
     .select('user_id, plan, enrolled_at, profiles(display_name, avatar_url)')
     .in('plan', ['lifetime', 'monthly'])
     .order('enrolled_at', { ascending: false })
     .limit(100);
+  const safeEnrollments = (enrollments ?? []) as unknown as EnrollmentNotificationRow[];
 
   const notifications: AdminNotification[] = [];
 
   // Sign-up notifications
-  (profiles || []).forEach((p: any) => {
+  (profiles || []).forEach((p: { id: string; display_name: string | null; avatar_url: string | null; created_at: string }) => {
     notifications.push({
       id: `signup-${p.id}`,
       type: 'signup',
@@ -767,7 +785,7 @@ export async function getAdminNotifications(): Promise<AdminNotification[]> {
   });
 
   // Subscription notifications
-  (enrollments || []).forEach((e: any) => {
+  safeEnrollments.forEach((e) => {
     notifications.push({
       id: `sub-${e.user_id}-${e.plan}-${e.enrolled_at}`,
       type: 'subscription',

@@ -55,10 +55,10 @@ export default function ForgotPassword() {
       
       setSuccessMsg('If an account exists for that email, we have sent password reset instructions.');
       reset();
-    } catch (error: any) {
+    } catch (error) {
       setError('root', {
         type: 'manual',
-        message: error.message || 'Failed to send reset email. Please try again.',
+        message: error instanceof Error ? error.message : 'Failed to send reset email. Please try again.',
       });
     }
   };

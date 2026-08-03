@@ -7,3 +7,6 @@ node_modules/
 *.log
 node_modules
 pass
+sample.mp4
+scratch.js
+scrape_images.py

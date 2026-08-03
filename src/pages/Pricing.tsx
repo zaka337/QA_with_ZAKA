@@ -63,9 +63,9 @@ export default function Pricing() {
       if (data?.url) {
         window.location.href = data.url;
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Checkout error:', err);
-      alert(err.message || 'Failed to start checkout. Please try again.');
+      alert(err instanceof Error ? err.message : 'Failed to start checkout. Please try again.');
     } finally {
       setLoadingPlan(null);
     }

@@ -158,8 +158,9 @@ export default function Contact() {
           <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-10 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="flex flex-col gap-2 relative">
-                <label className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Name</label>
+                <label htmlFor="contact-name" className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Name</label>
                 <input
+                  id="contact-name"
                   type="text"
                   name="name"
                   value={formData.name}
@@ -170,8 +171,9 @@ export default function Contact() {
                 />
               </div>
               <div className="flex flex-col gap-2 relative">
-                <label className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Email</label>
+                <label htmlFor="contact-email" className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Email</label>
                 <input
+                  id="contact-email"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -184,8 +186,9 @@ export default function Contact() {
             </div>
             
             <div className="flex flex-col gap-2 relative">
-              <label className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Message</label>
+              <label htmlFor="contact-message" className="text-[10px] font-mono tracking-[0.2em] text-white/40 uppercase">Message</label>
               <textarea
+                id="contact-message"
                 name="message"
                 value={formData.message}
                 onChange={handleChange}

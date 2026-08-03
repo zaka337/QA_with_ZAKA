@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const origin = req.headers.get('origin') || 'http://localhost:5173'
 
-    const sessionPayload: any = {
+    const sessionPayload: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       line_items: [{ price: price_id, quantity: 1 }],
       mode: plan === 'lifetime' ? 'payment' : 'subscription',
@@ -35,9 +35,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (err: any) {
-    console.error('Stripe error:', err.message)
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('Stripe error:', message)
+    return new Response(JSON.stringify({ error: message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

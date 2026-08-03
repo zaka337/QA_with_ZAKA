@@ -63,6 +63,7 @@ function InputGroupAddon({
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- mouse-only convenience proxy (click anywhere in the addon focuses the input), the same relationship a native <label> has with its control; the actual interactive element (the sibling <input>) is already fully keyboard-accessible on its own
     <div
       role="group"
       data-slot="input-group-addon"

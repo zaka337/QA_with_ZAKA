@@ -54,7 +54,7 @@ function initAmberCascades(canvas: HTMLCanvasElement) {
 
   let columns: Column[] = [];
   let waterSurface = 0;
-  let ripples: Ripple[] = [];
+  const ripples: Ripple[] = [];
   let wavePoints: WavePoint[] = [];
 
   function createColumn(index: number, scatter: boolean): Column {

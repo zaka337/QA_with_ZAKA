@@ -93,9 +93,9 @@ export default function Settings() {
 
       setSuccessMsg('Profile updated successfully.');
       setTimeout(() => setSuccessMsg(''), 3000);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert(err?.message || 'Failed to save profile.');
+      alert(err instanceof Error ? err.message : 'Failed to save profile.');
     } finally {
       setSaving(false);
     }
@@ -158,10 +158,11 @@ export default function Settings() {
           {/* Details Section */}
           <div className="settings-item space-y-6 p-8 bg-white/[0.02] border border-white/5">
             <div>
-              <label className="block text-xs font-geist text-white/50 uppercase tracking-widest mb-2">
+              <label htmlFor="settings-display-name" className="block text-xs font-geist text-white/50 uppercase tracking-widest mb-2">
                 Display Name
               </label>
               <input
+                id="settings-display-name"
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
@@ -172,10 +173,11 @@ export default function Settings() {
             </div>
 
             <div>
-              <label className="block text-xs font-geist text-white/50 uppercase tracking-widest mb-2">
+              <label htmlFor="settings-email" className="block text-xs font-geist text-white/50 uppercase tracking-widest mb-2">
                 Email Address
               </label>
               <input
+                id="settings-email"
                 type="email"
                 value={user?.email || ''}
                 disabled

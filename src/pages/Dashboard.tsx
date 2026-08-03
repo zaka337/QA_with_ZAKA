@@ -343,15 +343,17 @@ export default function Dashboard() {
             </h2>
             
             <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'all', label: 'All Status' },
-                { id: 'not_started', label: 'Not Started' },
-                { id: 'in_progress', label: 'In Progress' },
-                { id: 'completed', label: 'Completed' }
-              ].map(f => (
+              {(
+                [
+                  { id: 'all', label: 'All Status' },
+                  { id: 'not_started', label: 'Not Started' },
+                  { id: 'in_progress', label: 'In Progress' },
+                  { id: 'completed', label: 'Completed' },
+                ] as const
+              ).map(f => (
                 <button
                   key={f.id}
-                  onClick={() => setFilter(f.id as any)}
+                  onClick={() => setFilter(f.id)}
                   className={`text-xs font-geist px-4 py-2 uppercase tracking-wider transition-colors border ${
                     filter === f.id 
                       ? 'bg-white text-black border-white' 

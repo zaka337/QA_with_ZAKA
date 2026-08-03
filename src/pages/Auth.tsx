@@ -112,6 +112,7 @@ export default function Auth({ type }: AuthProps) {
     // which zodResolver's generics can't express statically — this is the
     // one deliberate cast; everything downstream (errors, register, data) is
     // fully typed as AuthFormData.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver's generics can't express a runtime-chosen schema union
     resolver: zodResolver(schema as any),
   });
 
@@ -153,10 +154,10 @@ export default function Auth({ type }: AuthProps) {
         setSuccessMsg('Account created! Check your email for a confirmation link, or sign in directly.');
         reset();
       }
-    } catch (error: any) {
+    } catch (error) {
       setError('root', {
         type: 'manual',
-        message: error.message || 'Authentication failed. Please try again.',
+        message: error instanceof Error ? error.message : 'Authentication failed. Please try again.',
       });
     }
   };
@@ -175,10 +176,10 @@ export default function Auth({ type }: AuthProps) {
         },
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       setError('root', {
         type: 'manual',
-        message: error.message || `Failed to sign in with ${provider}`,
+        message: error instanceof Error ? error.message : `Failed to sign in with ${provider}`,
       });
       setSocialLoading(null);
     }

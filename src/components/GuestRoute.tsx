@@ -15,7 +15,7 @@ export default function GuestRoute({ children }: GuestRouteProps) {
     if (!isLoading && isAuthenticated) {
       // If the user was trying to go somewhere before login, redirect there
       // Otherwise default to the dashboard
-      const from = (location.state as any)?.from || '/dashboard';
+      const from = (location.state as { from?: string } | null)?.from || '/dashboard';
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, location]);

@@ -12,8 +12,11 @@ import {
   createModule, createLesson, deleteModule, deleteLesson,
   getAllProfiles, updateUserRole, adminEnrollUser, logAdminAction,
   getStudentsWithDetails, getAdminNotifications, getAdminAuditLog,
-  type Module, type Profile, type StudentRecord, type AdminNotification, type AdminAuditLogEntry
+  type Module, type Lesson, type Profile, type StudentRecord, type AdminNotification, type AdminAuditLogEntry
 } from '../lib/supabase';
+import type { getRealAdminStats } from '../lib/supabase';
+
+type AdminStats = Awaited<ReturnType<typeof getRealAdminStats>>;
 import { CodeEditor } from '../components/CodeEditor';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useAuth } from '../hooks/useAuth';
@@ -98,7 +101,7 @@ export default function AdminDashboard() {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'analytics' | 'curriculum' | 'users' | 'content' | 'students' | 'notifications' | 'audit'>('analytics');
   // Data state
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [courseId, setCourseId] = useState<string>('');
@@ -148,7 +151,7 @@ export default function AdminDashboard() {
 
   // Editor state
   const [selectedItem, setSelectedItem] = useState<{type: 'module' | 'lesson', id: string} | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<Partial<Module> & Partial<Lesson>>({});
   const [saving, setSaving] = useState(false);
 
   // Create Modal State
@@ -169,25 +172,9 @@ export default function AdminDashboard() {
 
   const [growthRange, setGrowthRange] = useState<6 | 12 | 'all'>(6);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Refetch just the stats (not curriculum/profiles) when the growth chart's
-  // range selector changes, so switching ranges doesn't re-fetch everything.
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return; // loadData() already covers the initial fetch
-    }
-    import('../lib/supabase')
-      .then(({ getRealAdminStats }) => getRealAdminStats(growthRange))
-      .then(setStats)
-      .catch((e: unknown) => console.error('Failed to refresh stats:', e));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [growthRange]);
-
+  // Reads the latest courseId/growthRange via closure on every call, so it's
+  // deliberately defined as a plain function (not memoized) — later call
+  // sites (after creating/editing a module or lesson) depend on that.
   const loadData = async () => {
     setLoadingStats(true);
     try {
@@ -220,6 +207,25 @@ export default function AdminDashboard() {
       setLoadingStats(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally mount-only; growthRange changes are handled by the effect below
+  }, []);
+
+  // Refetch just the stats (not curriculum/profiles) when the growth chart's
+  // range selector changes, so switching ranges doesn't re-fetch everything.
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return; // loadData() already covers the initial fetch
+    }
+    import('../lib/supabase')
+      .then(({ getRealAdminStats }) => getRealAdminStats(growthRange))
+      .then(setStats)
+      .catch((e: unknown) => console.error('Failed to refresh stats:', e));
+  }, [growthRange]);
 
   const handleCourseSwitch = async (newCourseId: string) => {
     setCourseId(newCourseId);
@@ -276,7 +282,7 @@ export default function AdminDashboard() {
     if (activeTab === 'students' && students.length === 0) loadStudents();
     if (activeTab === 'notifications' && notifications.length === 0) loadNotifications();
     if (activeTab === 'audit' && auditLog.length === 0) loadAuditLog();
-  }, [activeTab]);
+  }, [activeTab, students.length, notifications.length, auditLog.length]);
 
   /* ── Handlers ── */
   const handleSelectItem = (type: 'module' | 'lesson', id: string) => {
@@ -342,8 +348,8 @@ export default function AdminDashboard() {
         }
         const profiles = await getAllProfiles();
         setAllProfiles(profiles);
-      } catch (e: any) {
-        showAlert(`Error: ${e.message}`);
+      } catch (e) {
+        showAlert(`Error: ${e instanceof Error ? e.message : String(e)}`);
       }
     });
   };
@@ -358,8 +364,8 @@ export default function AdminDashboard() {
         }
         showAlert('User successfully enrolled!');
         await loadData();
-      } catch (e: any) {
-        showAlert(`Error: ${e.message}`);
+      } catch (e) {
+        showAlert(`Error: ${e instanceof Error ? e.message : String(e)}`);
       }
     });
   };
@@ -377,9 +383,10 @@ export default function AdminDashboard() {
       }
       await loadData();
       setCreateModal({ ...createModal, isOpen: false });
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      showAlert(`Error creating item: ${e.message || 'Unknown error'}. Note: Supabase RLS policies might be blocking INSERTS.`);
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      showAlert(`Error creating item: ${msg}. Note: Supabase RLS policies might be blocking INSERTS.`);
     }
     setSaving(false);
   };
@@ -528,11 +535,11 @@ export default function AdminDashboard() {
                     <div>
                       <p className="text-5xl font-ndot tracking-wider">
                         {stats.moduleProgress.length > 0 
-                          ? Math.round(stats.moduleProgress.reduce((a: any, b: any) => a + b.completionRate, 0) / stats.moduleProgress.length) 
+                          ? Math.round(stats.moduleProgress.reduce((a, b) => a + b.completionRate, 0) / stats.moduleProgress.length) 
                           : 0}%
                       </p>
                       <div className="w-full h-1 bg-[#333] mt-3">
-                        <div className="h-full bg-white" style={{width: `${stats.moduleProgress.length > 0 ? Math.round(stats.moduleProgress.reduce((a: any, b: any) => a + b.completionRate, 0) / stats.moduleProgress.length) : 0}%`}} />
+                        <div className="h-full bg-white" style={{width: `${stats.moduleProgress.length > 0 ? Math.round(stats.moduleProgress.reduce((a, b) => a + b.completionRate, 0) / stats.moduleProgress.length) : 0}%`}} />
                       </div>
                     </div>
                   </div>
@@ -665,8 +672,11 @@ export default function AdminDashboard() {
                   {modules.map(mod => (
                     <div key={mod.id} className="mb-6 min-w-0">
                       <div
+                        role="button"
+                        tabIndex={0}
                         className={`flex items-center justify-between gap-2 p-2 rounded-none cursor-pointer transition-colors min-w-0 ${selectedItem?.id === mod.id ? 'bg-[#ea1f27] text-white' : 'hover:bg-white/10 text-white/70'}`}
                         onClick={() => handleSelectItem('module', mod.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectItem('module', mod.id); } }}
                       >
                         <span className="font-semibold text-sm uppercase tracking-wider truncate min-w-0 flex-1">{mod.title}</span>
                         <button onClick={(e) => { e.stopPropagation(); handleCreateLesson(mod.id); }} className="text-white/40 hover:text-white p-1 flex-shrink-0">
@@ -678,7 +688,10 @@ export default function AdminDashboard() {
                         {mod.lessons.map(lesson => (
                           <div
                             key={lesson.id}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => handleSelectItem('lesson', lesson.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectItem('lesson', lesson.id); } }}
                             className={`flex items-center gap-2 p-2 rounded-none cursor-pointer text-xs font-mono uppercase tracking-wider transition-colors min-w-0 ${selectedItem?.id === lesson.id ? 'bg-white text-black' : 'hover:bg-white/10 text-[#888] hover:text-white'}`}
                           >
                             <BookOpen size={14} className="flex-shrink-0" />
@@ -733,9 +746,10 @@ export default function AdminDashboard() {
                       <div className="space-y-6">
                         
                         <div>
-                          <label className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Order Index</label>
-                          <input 
-                            type="number" 
+                          <label htmlFor="admin-order-index" className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Order Index</label>
+                          <input
+                            id="admin-order-index"
+                            type="number"
                             value={editForm.order_index || 0}
                             onChange={e => setEditForm({...editForm, order_index: parseInt(e.target.value)})}
                             className="bg-black border-2 border-white/20 rounded-none px-3 py-2 text-white w-32 focus:border-white focus:outline-none font-mono"
@@ -745,8 +759,9 @@ export default function AdminDashboard() {
                         {selectedItem.type === 'lesson' && (
                           <>
                             <div>
-                              <label className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Markdown Content</label>
-                              <textarea 
+                              <label htmlFor="admin-markdown-content" className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Markdown Content</label>
+                              <textarea
+                                id="admin-markdown-content"
                                 value={editForm.content_markdown || ''}
                                 onChange={e => setEditForm({...editForm, content_markdown: e.target.value})}
                                 className="w-full h-[300px] bg-black border-2 border-white/20 rounded-none p-4 text-white font-mono text-sm leading-relaxed focus:border-white focus:outline-none resize-none"
@@ -755,7 +770,8 @@ export default function AdminDashboard() {
                             </div>
 
                             <div>
-                              <label className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Starter Code (Monaco Editor)</label>
+                              {/* Not a <label> — it doesn't target a native form control; Monaco manages its own internal textarea */}
+                              <span className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Starter Code (Monaco Editor)</span>
                               <div className="h-[400px] rounded-none overflow-hidden border-2 border-white/20">
                                 <CodeEditor 
                                   initialValue={editForm.starter_code || ''}
@@ -1318,8 +1334,8 @@ export default function AdminDashboard() {
                         } else {
                           showAlert('Error: ' + result.message);
                         }
-                      } catch (e: any) {
-                        showAlert('Invalid JSON format: ' + e.message);
+                      } catch (e) {
+                        showAlert('Invalid JSON format: ' + (e instanceof Error ? e.message : String(e)));
                       }
                     }}
                     className="px-6 py-2 bg-white text-black font-mono text-sm uppercase tracking-widest hover:bg-neutral-200 transition-colors"
@@ -1467,9 +1483,11 @@ export default function AdminDashboard() {
               
               <div className="space-y-4 font-mono">
                 <div>
-                  <label className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Title</label>
-                  <input 
-                    type="text" 
+                  <label htmlFor="admin-create-title" className="block text-xs font-mono text-white/50 uppercase tracking-widest mb-2">Title</label>
+                  <input
+                    id="admin-create-title"
+                    type="text"
+                    // eslint-disable-next-line jsx-a11y/no-autofocus -- modal opens only on explicit user action; moving focus to its first field is the WAI-ARIA-recommended dialog pattern
                     autoFocus
                     value={createInput}
                     onChange={e => setCreateInput(e.target.value)}

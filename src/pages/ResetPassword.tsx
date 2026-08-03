@@ -70,10 +70,10 @@ export default function ResetPassword() {
         navigate('/login');
       }, 3000);
       
-    } catch (error: any) {
+    } catch (error) {
       setError('root', {
         type: 'manual',
-        message: error.message || 'Failed to reset password. The link may have expired.',
+        message: error instanceof Error ? error.message : 'Failed to reset password. The link may have expired.',
       });
     }
   };

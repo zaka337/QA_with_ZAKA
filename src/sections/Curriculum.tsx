@@ -89,9 +89,12 @@ export default function Curriculum() {
             <div
               key={discipline.title}
               ref={(el) => { itemRefs.current[i] = el; }}
+              role="button"
+              tabIndex={0}
               className="flex flex-col md:flex-row md:items-start"
               style={{ gap: '40px', cursor: 'pointer' }}
               onClick={() => navigate(`/capability/${discipline.slug}`)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/capability/${discipline.slug}`); } }}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
             >

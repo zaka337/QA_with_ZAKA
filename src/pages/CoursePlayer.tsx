@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import gsap from 'gsap';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
@@ -13,9 +13,16 @@ import {
   type LessonProgress,
 } from '../lib/supabase';
 import { LessonContent } from '../components/LessonContent';
-import { CodeEditor } from '../components/CodeEditor';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Lock } from 'lucide-react';
+import { detectCodeFlavor } from '../lib/codeFlavor';
+
+const CodeEditor = lazy(() => import('../components/CodeEditor').then((m) => ({ default: m.CodeEditor })));
+const CodeEditorFallback = () => (
+  <div className="w-full h-full flex items-center justify-center text-white/30 text-sm font-mono">
+    Loading editor…
+  </div>
+);
 
 type LogType = 'info' | 'success' | 'error' | 'system';
 interface TerminalLog {
@@ -173,12 +180,9 @@ export default function CoursePlayer() {
       return;
     }
 
-    const isPlaywright = /\bpage\.(click|fill|goto|getBy)\w*\(|@playwright\/test/.test(code);
-    const isAppium = /driver\.\$\(|mobile:|appium/i.test(code);
-    const isPytest = /def test_|import pytest|assert\s/.test(code) && !/page\.|driver\./.test(code);
-    const isSelenium = /webdriver\.(Chrome|Firefox)|find_element|WebDriverWait|new Builder\(\)/.test(code);
+    const flavor = detectCodeFlavor(code);
 
-    if (isPlaywright) {
+    if (flavor === 'playwright') {
       setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ npx playwright test' }]);
       await wait(400);
       addLog('Running 1 test using 1 worker', 'info');
@@ -186,7 +190,7 @@ export default function CoursePlayer() {
       addLog('  ✓ should complete the flow (612ms)', 'success');
       await wait(300);
       addLog('1 passed (1.1s)', 'system');
-    } else if (isAppium) {
+    } else if (flavor === 'appium') {
       setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ node test.js' }]);
       await wait(400);
       addLog('Starting Appium session...', 'info');
@@ -195,7 +199,7 @@ export default function CoursePlayer() {
       await wait(500);
       addLog('Test completed successfully.', 'success');
       addLog('Process exited with code 0.', 'system');
-    } else if (isPytest) {
+    } else if (flavor === 'pytest') {
       setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ pytest -v' }]);
       await wait(400);
       addLog('collected 1 item', 'info');
@@ -203,7 +207,7 @@ export default function CoursePlayer() {
       addLog('test_case.py::test_example PASSED', 'success');
       await wait(300);
       addLog('1 passed in 0.42s', 'system');
-    } else if (isSelenium) {
+    } else if (flavor === 'selenium') {
       setTerminalLogs([{ id: Date.now().toString(), type: 'system', message: '$ python test.py' }]);
       await wait(400);
       addLog('Initializing WebDriver session...', 'info');
@@ -300,20 +304,30 @@ export default function CoursePlayer() {
           {hasEditor && activeLesson && (
             <div className="hidden lg:flex w-full lg:flex-1 flex-col h-[45vh] lg:h-full min-h-[280px] bg-[#020202] shrink-0 lg:shrink">
               <div className={`p-2 sm:p-4 transition-all duration-300 flex-1 min-h-0 ${isTerminalOpen ? 'h-[65%]' : 'h-full'}`}>
-                <CodeEditor 
-                  initialValue={activeLesson.starter_code || ''}
-                  language="javascript"
-                  onChange={setCodeValue}
-                  onRun={runMockExecution}
-                />
+                <Suspense fallback={<CodeEditorFallback />}>
+                  <CodeEditor
+                    initialValue={activeLesson.starter_code || ''}
+                    language="javascript"
+                    onChange={setCodeValue}
+                    onRun={runMockExecution}
+                  />
+                </Suspense>
               </div>
 
               {/* Terminal Panel */}
               {isTerminalOpen && (
                 <div className="h-[35%] bg-[#0a0a0a] border-t border-white/10 flex flex-col shadow-2xl">
                   <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-[#050505]">
-                    <span className="text-xs font-geist text-white/50 uppercase tracking-widest">Execution Terminal</span>
-                    <button 
+                    <span className="text-xs font-geist text-white/50 uppercase tracking-widest flex items-center gap-2">
+                      Execution Terminal
+                      <span
+                        title="This sandbox narrates expected output for practice — it doesn't run your code on a real server."
+                        className="normal-case tracking-normal text-[10px] font-inter font-normal text-amber-400/70 border border-amber-400/20 rounded px-1.5 py-0.5 cursor-help"
+                      >
+                        Simulated
+                      </span>
+                    </span>
+                    <button
                       onClick={() => setIsTerminalOpen(false)} 
                       className="text-white/40 hover:text-white transition-colors text-lg"
                     >
@@ -401,9 +415,13 @@ export default function CoursePlayer() {
 
       {/* ── Sidebar Syllabus ── */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-20 md:hidden backdrop-blur-sm" 
-          onClick={() => setSidebarOpen(false)} 
+        // Dismiss-on-click-outside backdrop; the visible × button below is the
+        // keyboard/screen-reader-accessible way to close, so this stays out of
+        // the tab order rather than adding a confusing invisible focus stop.
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 bg-black/60 z-20 md:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
       <div
