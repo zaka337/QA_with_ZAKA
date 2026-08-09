@@ -110,7 +110,7 @@ export default function Contact() {
               opacity: 0.6,
             }}
           >
-            Get In Touch
+            Available For Hire
           </div>
           <h2
             style={{
@@ -124,6 +124,21 @@ export default function Contact() {
           >
             Let's build something exceptional.
           </h2>
+          <p
+            className="mt-6 max-w-xl mx-auto"
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 300,
+              fontSize: 16,
+              lineHeight: 1.6,
+              color: '#dadada',
+              opacity: 0.65,
+            }}
+          >
+            I'm a full-stack developer available for freelance projects, contract work, and consulting —
+            web apps, QA/test-automation systems, and everything in between. If you're a company or
+            individual with a project in mind, tell me about it below.
+          </p>
         </div>
 
         <div 
