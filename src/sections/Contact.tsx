@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
 export default function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -55,13 +59,22 @@ export default function Contact() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch("https://formspree.io/f/mqerdzrg", {
+      const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE_ID,
+          template_id: EMAILJS_TEMPLATE_ID,
+          user_id: EMAILJS_PUBLIC_KEY,
+          template_params: {
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+            time: new Date().toLocaleString(),
+          },
+        }),
       });
 
       if (response.ok) {
