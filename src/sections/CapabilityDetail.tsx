@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import AmberCascades from './AmberCascades';
 import { capabilityDetailConfig } from '../config';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 
 const SLUGS = Object.keys(capabilityDetailConfig.capabilities);
 
@@ -8,6 +9,12 @@ export default function CapabilityDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const data = slug ? capabilityDetailConfig.capabilities[slug] : null;
+
+  useSeoMeta({
+    title: data?.title || 'Roadmap Stage Not Found',
+    description: data?.subtitle || 'Learn software QA and test automation with Zaka.',
+    path: `/capability/${slug}`,
+  });
 
   if (!data) {
     return (

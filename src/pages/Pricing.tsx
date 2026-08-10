@@ -4,7 +4,7 @@ import gsap from 'gsap';
 import { Button } from '../components/Button';
 import { AnimatedHero } from '../components/ui/animated-hero';
 import { useAuth } from '../hooks/useAuth';
-import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useSeoMeta } from '../hooks/useSeoMeta';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
 
@@ -12,7 +12,11 @@ const LIFETIME_PRICE_ID = import.meta.env.VITE_STRIPE_LIFETIME_PRICE_ID;
 const MONTHLY_PRICE_ID = import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID;
 
 export default function Pricing() {
-  useDocumentTitle('Pricing');
+  useSeoMeta({
+    title: 'Pricing',
+    description: 'Master software QA and test automation with Selenium, Playwright, and Appium. Every course starts with a free first module — upgrade to Monthly or Lifetime access when ready.',
+    path: '/pricing',
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, role, isLoading } = useAuth();
