@@ -17,6 +17,7 @@ export default function Contact() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -57,7 +58,8 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+    setSubmitError('');
+
     try {
       const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST",
@@ -80,16 +82,19 @@ export default function Contact() {
       if (response.ok) {
         setIsSubmitted(true);
         setFormData({ name: '', email: '', message: '' });
-        
+
         // Reset success state after a few seconds
         setTimeout(() => {
           setIsSubmitted(false);
         }, 5000);
       } else {
-        console.error("Form submission failed");
+        const body = await response.text();
+        console.error("Form submission failed:", response.status, body);
+        setSubmitError("Something went wrong sending your message — please try again, or email me directly.");
       }
     } catch (error) {
       console.error("Form submission error:", error);
+      setSubmitError("Something went wrong sending your message — please try again, or email me directly.");
     } finally {
       setIsSubmitting(false);
     }
@@ -251,6 +256,11 @@ export default function Contact() {
                 "Send Message"
               )}
             </button>
+            {submitError && (
+              <p role="alert" className="text-red-400 text-sm font-inter font-light text-center -mt-6">
+                {submitError}
+              </p>
+            )}
           </form>
         </div>
       </div>
