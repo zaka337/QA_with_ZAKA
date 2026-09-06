@@ -13,6 +13,7 @@ import {
 import { CertificateTemplate } from '../components/CertificateTemplate';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Download, BookOpen, CheckCircle, ChevronRight, MonitorPlay, Lock } from 'lucide-react';
+import { DashboardSkeleton } from '../components/Skeletons';
 
 type EnrolledCourseData = {
   course: Course;
@@ -207,13 +208,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="loading-text">
-          <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

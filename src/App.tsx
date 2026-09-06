@@ -12,6 +12,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GuestRoute from './components/GuestRoute';
 import RoleRoute from './components/RoleRoute';
 import Chatbot from './components/Chatbot';
+import { AppLoadingSkeleton } from './components/Skeletons';
 
 // Lazy load new pages for better performance
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -48,13 +49,7 @@ function HomePage() {
 }
 
 function PageLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-      <div className="loading-text">
-        <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
-      </div>
-    </div>
-  );
+  return <AppLoadingSkeleton />;
 }
 
 export default function App() {

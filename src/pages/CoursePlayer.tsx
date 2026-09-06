@@ -16,6 +16,7 @@ import { LessonContent } from '../components/LessonContent';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Lock } from 'lucide-react';
 import { detectCodeFlavor } from '../lib/codeFlavor';
+import { CoursePlayerSkeleton } from '../components/Skeletons';
 
 const CodeEditor = lazy(() => import('../components/CodeEditor').then((m) => ({ default: m.CodeEditor })));
 const CodeEditorFallback = () => (
@@ -234,13 +235,7 @@ export default function CoursePlayer() {
   };
   
   if (loading) {
-    return (
-      <div className="h-screen w-screen bg-black flex items-center justify-center">
-        <div className="loading-text">
-          <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
-        </div>
-      </div>
-    );
+    return <CoursePlayerSkeleton />;
   }
 
   const hasEditor = !activeLessonLocked && (!!activeLesson?.starter_code || !!activeLesson?.solution_code);

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase, getProfile, updateProfile, uploadAvatar } from '../lib/supabase';
 import { Button } from '../components/Button';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { SettingsSkeleton } from '../components/Skeletons';
 
 export default function Settings() {
   useDocumentTitle('Settings');
@@ -102,11 +103,7 @@ export default function Settings() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="loading-text"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></div>
-      </div>
-    );
+    return <SettingsSkeleton />;
   }
 
   return (

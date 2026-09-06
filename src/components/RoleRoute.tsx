@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { AppLoadingSkeleton } from './Skeletons';
 
 interface RoleRouteProps {
   children: React.ReactNode;
@@ -23,13 +24,7 @@ export default function RoleRoute({ children, allowedRoles }: RoleRouteProps) {
   }, [isAuthenticated, isLoading, role, allowedRoles, navigate]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="loading-text">
-          <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
-        </div>
-      </div>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   // If not authenticated or role is not allowed, don't render children

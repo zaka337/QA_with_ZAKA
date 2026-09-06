@@ -15,6 +15,7 @@ import {
   type Module, type Lesson, type Profile, type StudentRecord, type AdminNotification, type AdminAuditLogEntry
 } from '../lib/supabase';
 import type { getRealAdminStats } from '../lib/supabase';
+import { AdminAnalyticsSkeleton, CurriculumTreeSkeleton } from '../components/Skeletons';
 
 type AdminStats = Awaited<ReturnType<typeof getRealAdminStats>>;
 import { CodeEditor } from '../components/CodeEditor';
@@ -478,10 +479,7 @@ export default function AdminDashboard() {
         {activeTab === 'analytics' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {loadingStats || !stats ? (
-              <div className="flex flex-col items-center justify-center h-[500px] text-white/50 space-y-4">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
-                <p className="font-geist tracking-widest text-sm uppercase">Aggregating Real-Time Data...</p>
-              </div>
+              <AdminAnalyticsSkeleton />
             ) : (
               <>
                 {/* KPI Cards */}
@@ -663,9 +661,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
               {loadingModules ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
-                </div>
+                <CurriculumTreeSkeleton />
               ) : (
               <ScrollArea.Root className="flex-1 overflow-hidden">
                 <ScrollArea.Viewport className="w-full h-full p-4">
