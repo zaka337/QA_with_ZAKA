@@ -79,7 +79,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex items-center justify-center pt-20 px-6">
+    <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex items-center justify-center pt-28 px-6">
       <div className="auth-content w-full max-w-md p-8 border border-white/10 bg-white/[0.02]">
         
         <div className="text-center mb-10">

@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { navigationConfig } from '../config';
 import { useAuth } from '../hooks/useAuth';
+import { SaleMarquee } from '../components/SaleMarquee';
 
 export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
@@ -91,9 +92,11 @@ export default function Navigation() {
 
   return (
     <>
+      <SaleMarquee />
       <nav
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between transition-colors duration-500 px-4 sm:px-6 md:px-[5vw]"
+        className="fixed left-0 right-0 z-50 flex items-center justify-between transition-colors duration-500 px-4 sm:px-6 md:px-[5vw]"
         style={{
+          top: 32,
           height: 80,
           backgroundColor: scrolled || mobileOpen ? 'rgba(10, 10, 10, 0.95)' : 'transparent',
           backdropFilter: scrolled || mobileOpen ? 'blur(8px)' : 'none',
@@ -243,7 +246,7 @@ export default function Navigation() {
             aria-hidden="true"
           />
           <div
-            className="fixed top-20 left-0 right-0 bottom-0 z-40 bg-[#0a0a0a] overflow-y-auto md:hidden px-6 py-6"
+            className="fixed top-28 left-0 right-0 bottom-0 z-40 bg-[#0a0a0a] overflow-y-auto md:hidden px-6 py-6"
             style={{ backdropFilter: 'blur(12px)' }}
           >
             <div className="max-w-lg mx-auto">

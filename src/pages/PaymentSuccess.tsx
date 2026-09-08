@@ -73,7 +73,7 @@ export default function PaymentSuccess() {
   }, [status, navigate]);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex items-center justify-center pt-20 px-6">
+    <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex items-center justify-center pt-28 px-6">
       <div className="success-content w-full max-w-md p-10 border border-white/10 bg-white/[0.02] text-center">
 
         {status === 'confirming' && (

@@ -406,7 +406,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 pb-12 px-6 font-inter selection:bg-[#ea1f27] selection:text-white">
+    <div className="min-h-screen bg-black text-white pt-32 pb-12 px-6 font-inter selection:bg-[#ea1f27] selection:text-white">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
