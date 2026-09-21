@@ -14,6 +14,19 @@ export default function CapabilityDetail() {
     title: data?.title || 'Roadmap Stage Not Found',
     description: data?.subtitle || 'Learn software QA and test automation with Zaka.',
     path: `/capability/${slug}`,
+    structuredData: data
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'Course',
+          name: data.title,
+          description: [data.subtitle, ...data.paragraphs].join(' '),
+          provider: {
+            '@type': 'Organization',
+            name: 'QA with Zaka',
+            sameAs: 'https://qa-with-zaka-4pc9.vercel.app/',
+          },
+        }
+      : undefined,
   });
 
   if (!data) {

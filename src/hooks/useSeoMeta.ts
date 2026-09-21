@@ -9,6 +9,8 @@ interface SeoMetaOptions {
   description: string;
   /** Route path, e.g. '/pricing' or '/capability/foundations-of-code' */
   path: string;
+  /** Optional page-specific JSON-LD (e.g. a Course schema), injected as its own <script> tag and removed on unmount. */
+  structuredData?: Record<string, unknown>;
 }
 
 /**
@@ -18,8 +20,19 @@ interface SeoMetaOptions {
  * (Pricing, each capability page) was a duplicate of the homepage, which
  * can suppress them from being indexed as their own results entirely.
  */
-export function useSeoMeta({ title, description, path }: SeoMetaOptions) {
+export function useSeoMeta({ title, description, path, structuredData }: SeoMetaOptions) {
   useDocumentTitle(title);
+
+  useEffect(() => {
+    if (!structuredData) return;
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, [structuredData]);
 
   useEffect(() => {
     const descTag = document.querySelector('meta[name="description"]');
