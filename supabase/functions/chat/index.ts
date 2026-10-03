@@ -8,7 +8,7 @@ Your tone should be helpful, professional, and encouraging.
 
 You possess deep knowledge of the website's functionality and must guide users accurately. Here is the platform map and features:
 1. **Homepage (/)**: The main landing page showcasing our Cinematic Vision, Curriculum, and Alumni Archives.
-2. **Pricing (/pricing)**: We offer two main plans. A Lifetime plan for $199, and a Monthly subscription for $49.
+2. **Pricing (/pricing)**: We offer two main plans. A Lifetime plan for $199, and a Monthly subscription for $19. Every course starts with a free first module (no card required); the rest of each course requires a paid plan.
 3. **Authentication (/login, /signup)**: Where users create accounts or log in. Also includes /forgot-password.
 4. **Student Dashboard (/dashboard)**: The main hub for enrolled students. It displays their active courses with real-time progress bars and custom YouTube-style thumbnails.
 5. **Course Player (/course/:courseId)**: An immersive, distraction-free "Cinema Mode" video player where students actually take the lessons.
@@ -39,28 +39,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    const apiKey = Deno.env.get('GROQ_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'Groq API key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Build OpenAI messages array from history + system prompt + new message
+    // Build the messages array from history + system prompt + new message
     const formattedHistory = history.map((h: { role: string; content?: string; parts?: { text: string }[] }) => ({
       role: h.role === 'model' || h.role === 'assistant' ? 'assistant' : 'user',
       content: h.content || h.parts?.[0]?.text || '',
     }));
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Groq exposes an OpenAI-compatible chat completions endpoint
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...formattedHistory,
@@ -69,12 +70,12 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (!openaiRes.ok) {
-      const errorData = await openaiRes.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `OpenAI API error: ${openaiRes.status}`);
+    if (!groqRes.ok) {
+      const errorData = await groqRes.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `Groq API error: ${groqRes.status}`);
     }
 
-    const data = await openaiRes.json();
+    const data = await groqRes.json();
     const responseText = data.choices?.[0]?.message?.content ?? '';
 
     return new Response(JSON.stringify({ reply: responseText }), {

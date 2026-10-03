@@ -1,0 +1,28 @@
+name: Supabase Keep-Alive
+
+# Supabase's free tier auto-pauses a project after ~7 days with no activity
+# (undocumented exactly what counts, per their own docs — this is an
+# unofficial workaround, not a guaranteed fix; Pro plan is the only one
+# Supabase actually guarantees). Pinging well inside that window with a
+# real read query is the best available approximation of "activity".
+on:
+  schedule:
+    - cron: '0 0 */3 * *' # every 3 days at 00:00 UTC
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          status=$(curl -s -o /tmp/body.json -w "%{http_code}" \
+            "https://dgvihngyqjigdcdfajuv.supabase.co/rest/v1/courses?select=id&limit=1" \
+            -H "apikey: sb_publishable_3Opj04iiEoEMQI-zpcMYgQ_9K_05eOc" \
+            -H "Authorization: Bearer sb_publishable_3Opj04iiEoEMQI-zpcMYgQ_9K_05eOc")
+          echo "Response status: $status"
+          cat /tmp/body.json
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Supabase ping failed with status $status — project may be paused or unreachable."
+            exit 1
+          fi
