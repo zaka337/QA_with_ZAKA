@@ -332,7 +332,7 @@ export const footerConfig: FooterConfig = {
     {
       title: "Connect with Zaka",
       links: [
-        { label: "Portfolio", href: "https://zakasportfolio.netlify.app/" },
+        { label: "Portfolio", href: "https://zaka-portfolio-two.vercel.app" },
         { label: "GitHub", href: "https://github.com/zaka337" },
         { label: "LinkedIn", href: "https://www.linkedin.com/in/zaka-ullah-waheed-80380832a" },
       ],
@@ -340,7 +340,7 @@ export const footerConfig: FooterConfig = {
   ],
   copyright: "© 2026 QA with Zaka. Built for future automation engineers.",
   bottomLinks: [
-    { label: "Portfolio", href: "https://zakasportfolio.netlify.app/" },
+    { label: "Portfolio", href: "https://zaka-portfolio-two.vercel.app" },
     { label: "GitHub", href: "https://github.com/zaka337" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/zaka-ullah-waheed-80380832a" },
   ],
