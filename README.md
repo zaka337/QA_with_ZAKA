@@ -1,195 +1,81 @@
-# Digital Rain Frontend Template
+# QA with Zaka
 
-A dark, cinematic landing page with a canvas-based amber digital rain animation. Designed for AI/deep-tech companies, featuring falling mathematical symbols that splash into a simulated water surface with ripple physics.
+A full-stack learning platform for QA automation. Four structured courses (Python, Selenium, Playwright and Appium), a student dashboard with progress tracking, a distraction-free lesson player, paid access through Stripe, and an admin area.
 
-## Features
+**Live:** https://qa-with-zaka-4pc9.vercel.app/
 
-- Full-viewport hero with interactive digital rain canvas background
-- Liquid glass button with SVG displacement map refraction effect
-- Capabilities section with hover-reveal images and GSAP scroll animations
-- Cinematic video section with ultrawide aspect ratio
-- Research project grid (4-column) with grayscale-to-color hover transitions
-- Capability detail sub-pages with article-style layout and prev/next navigation
-- Scroll-aware sticky navigation with blur backdrop
-- Fully responsive (mobile-friendly)
+## What it does
 
-## Tech Stack
+- **Courses:** 4 courses, 24 modules and 80 lessons. Course content is written as JSON in `content/courses/` and loaded through an admin import tool, so adding a course needs no code change.
+- **Students:** sign-up, login and password reset; a dashboard with live progress bars; "Cinema Mode", a distraction-free lesson player; account settings.
+- **Free first module, paid access after:** every course opens with a free module. Stripe Checkout (lifetime or monthly plan) runs through Supabase Edge Functions, and a webhook verifies Stripe's signature before setting the student's plan and enrolling them. The paywall is enforced in the database (a view hides paid lesson content from anyone without access), not only in the interface.
+- **Admin:** manage students and enrolments, import courses, and review an audit log of admin actions.
+- **AI assistant:** a chat assistant served by an Edge Function and a hosted language model, which knows the site and the course catalogue.
+- **Quality checks:** lint, unit tests and a production build run on every push (GitHub Actions).
 
-- React 19 + TypeScript + Vite 7
-- Tailwind CSS 3.4
-- GSAP 3 (scroll-triggered animations)
-- React Router DOM 7 (client-side routing)
-- Canvas API (digital rain effect)
-- SVG Filters (liquid glass button)
-- Google Fonts (EB Garamond, Inter, Fira Code)
-- Geist Mono (loaded from node_modules)
+## Tech stack
 
-## Quick Start
+| Area | Tools |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, GSAP, Framer Motion, React Router |
+| Backend | Supabase: Auth, Postgres, Edge Functions |
+| Payments | Stripe Checkout and webhooks |
+| AI | Hosted language model through the `chat` Edge Function |
+| Quality and hosting | Vitest, ESLint, GitHub Actions, Vercel |
 
-1. Clone this repository
-2. Install dependencies: `npm install`
-3. Edit `src/config.ts` with your content
-4. Add images to `public/images/`
-5. Add video to `public/videos/`
-6. Run dev server: `npm run dev`
-7. Build for production: `npm run build`
+## Project layout
 
-## Configuration
-
-All content is configured in `src/config.ts`. Edit this file to customize your site.
-
-### Config Structure
-
-```typescript
-// Site-wide settings
-export const siteConfig: SiteConfig = {
-  language: "",       // BCP-47 language code, e.g. "en"
-  brandName: "",      // Brand name in nav bar (max ~20 chars)
-};
-
-// Main navigation
-export const navigationConfig: NavigationConfig = {
-  links: [],          // Array of { label: string, href: string }
-  ctaText: "",        // Right-side CTA button text
-};
-
-// Hero section
-export const heroConfig: HeroConfig = {
-  title: "",          // Main heading (max ~20 chars)
-  subtitleLine1: "",  // First subtitle line (max ~90 chars)
-  subtitleLine2: "",  // Second subtitle line (max ~60 chars)
-  ctaText: "",        // Button text (max ~25 chars)
-};
-
-// Capabilities section
-export const capabilitiesConfig: CapabilitiesConfig = {
-  sectionLabel: "",   // Section label, e.g. "Capabilities"
-  items: [],          // Array of { title, slug, description, image }
-};
-
-// Capability detail pages
-export const capabilityDetailConfig: CapabilityDetailConfig = {
-  sectionLabel: "",   // Page label, e.g. "Capability"
-  backLinkText: "",   // Back link text, e.g. "Back to home"
-  prevLabel: "",      // Previous nav label
-  nextLabel: "",      // Next nav label
-  notFoundText: "",   // 404 message
-  capabilities: {},   // Record<slug, { title, subtitle, paragraphs[] }>
-};
-
-// Architecture / video section
-export const architectureConfig: ArchitectureConfig = {
-  sectionLabel: "",   // Section label, e.g. "Architecture"
-  videoPath: "",      // Video file path, e.g. "/videos/cinematic-vision.mp4"
-  title: "",          // Section heading (max ~55 chars)
-  description: "",    // Description paragraph
-};
-
-// Research grid section
-export const researchConfig: ResearchConfig = {
-  sectionLabel: "",   // Section label, e.g. "Research"
-  projects: [],       // Array of { title, year, discipline, image }
-};
-
-// Footer
-export const footerConfig: FooterConfig = {
-  heading: "",        // Footer heading (max ~35 chars)
-  columns: [],        // Array of { title, links[] }
-  copyright: "",      // Copyright text
-  bottomLinks: [],    // Array of { label, href }
-};
+```text
+src/                     the React app
+content/courses/         course content as JSON
+supabase/functions/      Edge Functions: chat, create-checkout-session, get-video-url, stripe-webhook
+supabase_*.sql           database changes applied to the Supabase project (see "Database")
+.github/workflows/       CI (lint, test, build) and a Supabase keep-alive job
 ```
 
-## Required Images
+## Run it locally
 
-### Capability Section (4 images)
-- `public/images/capability-1.jpg` - Hover image (min 400x300)
-- `public/images/capability-2.jpg`
-- `public/images/capability-3.jpg`
-- `public/images/capability-4.jpg`
-
-### Research Grid (3-4 unique images)
-- `public/images/research-1.jpg` - Square format (1:1, min 400x400)
-- `public/images/research-2.jpg`
-- `public/images/research-3.jpg`
-- `public/images/research-4.jpg` (optional)
-
-### Video
-- `public/videos/cinematic-vision.mp4` - Looping video (21:9 aspect ratio, under 15MB)
-
-## Design
-
-**Colors:**
-- Background: `#0a0a0a` (near-black)
-- Primary text: `#ffffff` (white)
-- Secondary text: `#dadada` (light gray)
-- Accent: amber tones `rgba(200, 170, 130)`
-- Primary HSL: `34 68% 75%`
-
-**Fonts:**
-- Display/Brand: GeistMono (monospace, from node_modules)
-- Headings: EB Garamond (serif, Google Fonts)
-- Body: Inter (sans-serif, Google Fonts)
-- Code/Year: Fira Code (monospace, Google Fonts)
-
-**Key Animations:**
-- Digital rain: Canvas-rendered falling symbols with water physics and ripple effects
-- Liquid glass button: SVG displacement filter simulating glass refraction
-- GSAP scroll reveals: Staggered fade-in on intersection for capabilities and research grid
-- Hover transitions: Amber color shift on capability titles, grayscale-to-color on research images
-
-## Build
+You need Node 20 or newer, a Supabase project and a Stripe account (test mode is fine).
 
 ```bash
-npm run build
+npm install
+npm run dev
 ```
 
-Output in `dist/` folder ready to deploy. Supports any static hosting (Netlify, Vercel, Cloudflare Pages, etc.).
+Create `.env.local` in the project root (it is git-ignored):
 
-## Project Structure
-
-```
-01-cyber-rain-frontend/
-├── index.html                  # Entry point (Google Fonts loaded here)
-├── package.json                # Dependencies
-├── vite.config.ts              # Vite build config
-├── tailwind.config.js          # Tailwind theme (shadcn preset)
-├── tsconfig.json               # TypeScript config
-├── postcss.config.js           # PostCSS config
-├── eslint.config.js            # ESLint config
-├── public/
-│   ├── images/.gitkeep         # Add your images here
-│   └── videos/.gitkeep         # Add your video here
-└── src/
-    ├── config.ts               # All content configuration
-    ├── main.tsx                 # React entry (BrowserRouter)
-    ├── App.tsx                  # Routes (HomePage + CapabilityDetail)
-    ├── index.css                # Global styles, @font-face, nav-link class
-    ├── lib/
-    │   └── utils.ts            # Tailwind merge utility
-    ├── hooks/
-    │   └── use-mobile.ts       # Mobile breakpoint hook
-    ├── components/
-    │   ├── LiquidGlassButton.tsx  # Glass refraction button
-    │   └── ui/                    # shadcn/ui component library
-    └── sections/
-        ├── Navigation.tsx      # Sticky nav bar
-        ├── Hero.tsx            # Hero with digital rain
-        ├── AmberCascades.tsx   # Canvas digital rain effect
-        ├── Curriculum.tsx      # Capabilities listing
-        ├── CinematicVision.tsx # Video + text section
-        ├── AlumniArchives.tsx  # Research project grid
-        ├── CapabilityDetail.tsx # Detail sub-page
-        └── Footer.tsx          # Footer with link columns
+```text
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_STRIPE_MONTHLY_PRICE_ID=
+VITE_STRIPE_LIFETIME_PRICE_ID=
+VITE_EMAILJS_SERVICE_ID=
+VITE_EMAILJS_TEMPLATE_ID=
+VITE_EMAILJS_PUBLIC_KEY=
 ```
 
-## Notes
+The Edge Functions read their secrets from the Supabase project (`supabase secrets set ...`), never from the repository:
 
-- Do not modify component files unless fixing bugs
-- All content goes in `src/config.ts`
-- Images go in `public/images/`
-- Video goes in `public/videos/`
-- Design properties (colors, fonts) are set in `tailwind.config.js` and `index.css`
-- The Geist font is loaded from `node_modules` via `@font-face` in `index.css` -- make sure to run `npm install` before dev
-- The digital rain animation respects `prefers-reduced-motion` media query
-- React Router uses `BrowserRouter` -- configure your hosting for SPA fallback (redirect all routes to `index.html`)
+| Secret | Used by |
+|---|---|
+| `STRIPE_SECRET_KEY` | `create-checkout-session`, `stripe-webhook` |
+| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `stripe-webhook`, `get-video-url` |
+| `GROQ_API_KEY` (and optionally `GEMINI_API_KEY`, `OPENAI_API_KEY`) | `chat` |
+
+`SUPABASE_URL` and `SUPABASE_ANON_KEY` are provided to Edge Functions by Supabase itself.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the unit tests once (`npm run test:watch` to watch) |
+
+## Database
+
+The `supabase_*.sql` files at the repository root are the changes applied to the Supabase project: the student-access model, the secure lesson-content view behind the paywall, the admin audit log and a few fixes. They are meant to be run in the Supabase SQL editor.
+
+A full export of the base schema (tables such as profiles, courses and enrollments) is not in this repository yet, so a brand-new Supabase project cannot be recreated from the files here alone. Exporting it as migrations (`supabase db dump`) is the next step.
